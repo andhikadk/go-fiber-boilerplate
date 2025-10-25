@@ -76,36 +76,36 @@ docker-build: ## Build Docker image
 	@echo "Building Docker image..."
 	@docker build -t $(APP_NAME):latest .
 
-docker-up: ## Start Docker containers (docker-compose)
+docker-up: ## Start Docker containers (docker compose)
 	@echo "Starting Docker containers..."
-	@docker-compose up -d
+	@docker compose up -d
 
 docker-down: ## Stop Docker containers
 	@echo "Stopping Docker containers..."
-	@docker-compose down
+	@docker compose down
 
 docker-logs: ## View Docker logs
-	@docker-compose logs -f
+	@docker compose logs -f
 
 docker-reset: ## Reset Docker containers and volumes (removes all data)
 	@echo "Resetting Docker containers and volumes..."
-	@docker-compose down -v
+	@docker compose down -v
 	@echo "Containers and volumes removed. Restart with: make docker-up"
 
 docker-dev: ## Start Docker containers with hot reload (development mode)
 	@echo "Starting Docker containers with hot reload..."
-	@docker-compose -f docker-compose.dev.yml up -d
+	@docker compose -f docker-compose.dev.yml up -d
 
 docker-dev-logs: ## View Docker development logs
-	@docker-compose -f docker-compose.dev.yml logs -f
+	@docker compose -f docker-compose.dev.yml logs -f
 
 docker-dev-down: ## Stop Docker development containers
 	@echo "Stopping Docker development containers..."
-	@docker-compose -f docker-compose.dev.yml down
+	@docker compose -f docker-compose.dev.yml down
 
 docker-dev-reset: ## Reset Docker development containers and volumes
 	@echo "Resetting Docker development containers and volumes..."
-	@docker-compose -f docker-compose.dev.yml down -v
+	@docker compose -f docker-compose.dev.yml down -v
 	@echo "Development containers and volumes removed. Restart with: make docker-dev"
 
 all: clean install-deps build test ## Clean, install, build and test

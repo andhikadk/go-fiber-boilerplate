@@ -78,10 +78,23 @@ github.com/joho/godotenv v1.5.1
 
 ## ⚡ Quick Start
 
-### Prerequisites
+### Prerequisites (Choose ONE based on your preferred setup)
+
+**Option A: Docker + Hot Reload (Recommended)** ⭐
+- Docker Desktop or Docker Engine
+- Docker Compose v1.29+
+- (No need to install Go, PostgreSQL, or Make locally!)
+
+**Option B: Production-like (Docker)**
+- Docker Desktop or Docker Engine
+- Docker Compose v1.29+
+- (No need to install Go, PostgreSQL, or Make locally!)
+
+**Option C: Local Development (No Docker)**
 - Go 1.25 or higher
-- PostgreSQL 12+ (or SQLite for development)
+- PostgreSQL 12+ (or SQLite)
 - Make (optional, for using Makefile)
+- git
 
 ### Installation
 
