@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL,
     password VARCHAR(255) NOT NULL,
     role VARCHAR(50) DEFAULT 'user',
     is_active BOOLEAN DEFAULT true,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS books (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
-    isbn VARCHAR(20) NOT NULL UNIQUE,
+    isbn VARCHAR(20) NOT NULL,
     year INTEGER,
     pages INTEGER,
     publisher VARCHAR(255),

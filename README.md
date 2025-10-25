@@ -40,8 +40,11 @@ go-fiber-boilerplate/
 ├── tests/                      # Test files
 ├── .env.example                # Environment template
 ├── go.mod & go.sum             # Dependencies
-├── Dockerfile                  # Multi-stage Docker build
-├── docker-compose.yml          # Docker Compose configuration
+├── Dockerfile                  # Multi-stage Docker build (production)
+├── Dockerfile.dev              # Development Docker with hot reload
+├── docker-compose.yml          # Production Docker Compose configuration
+├── docker-compose.dev.yml      # Development Docker Compose with hot reload
+├── .air.toml                   # Air configuration for hot reload
 ├── .dockerignore                # Docker build ignore rules
 ├── Makefile                    # Build and development commands
 └── README.md                   # This file
@@ -103,7 +106,24 @@ cp .env.example .env
 
 4. **Setup database and run application**
 
-**Option A: Using Docker Compose (Recommended)**
+**Option A: Using Docker Compose with Hot Reload (Recommended for Development)** ⭐
+```bash
+make docker-dev
+```
+This will:
+- Start PostgreSQL database (accessible at `localhost:6543`)
+- Run application with hot reload (instant reload on code changes)
+- Run migrations automatically
+- Start the API on `http://localhost:4000`
+
+> 💡 **Tip:** This is perfect for development! Edit your code and see changes instantly without rebuilding.
+
+View logs:
+```bash
+make docker-dev-logs
+```
+
+**Option B: Using Docker Compose (Production-like)**
 ```bash
 make docker-up
 ```
@@ -114,7 +134,7 @@ This will:
 
 > ⚠️ **Important:** The application is already running inside Docker! You do NOT need to run `make run` after this. The API is ready at `http://localhost:4000`
 
-**Option B: Local Development (without Docker)**
+**Option C: Local Development (without Docker)**
 ```bash
 # Create PostgreSQL database manually
 createdb fiber_boilerplate
@@ -242,7 +262,22 @@ go tool cover -html=coverage.out
 
 ## 🐳 Docker Deployment
 
-### Build and Run with Docker Compose
+### Development Setup with Hot Reload (Recommended)
+```bash
+make docker-dev
+# or
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+This will:
+- Start PostgreSQL database (port 6543 from host, 5432 internal)
+- Run application with hot reload enabled (air watches for code changes)
+- Run database migrations automatically
+- Expose API on port 4000 (`http://localhost:4000`)
+
+> 💡 **Benefits:** Changes to Go files are automatically detected and compiled. Just save your file and refresh the browser - no rebuild needed!
+
+### Production Setup (No Hot Reload)
 ```bash
 make docker-up
 # or
@@ -250,15 +285,24 @@ docker-compose up -d
 ```
 
 This will:
-- Build the Fiber application
+- Build the Fiber application into a compiled binary
 - Start PostgreSQL database (port 6543 from host, 5432 internal)
 - Run database migrations automatically
 - Expose API on port 4000 (`http://localhost:4000`)
 
 ### View Logs
 ```bash
+# For development setup
+make docker-dev-logs
+# or
+docker-compose -f docker-compose.dev.yml logs -f
+
+# For production setup
 make docker-logs
 # or
+docker-compose logs -f
+
+# View specific service logs
 docker-compose logs -f fiber_app    # Just app logs
 docker-compose logs -f postgres     # Just database logs
 ```
@@ -284,6 +328,15 @@ curl http://localhost:4000/health
 ```
 
 ### Stop
+
+**Development setup:**
+```bash
+make docker-dev-down
+# or
+docker-compose -f docker-compose.dev.yml down
+```
+
+**Production setup:**
 ```bash
 make docker-down
 # or
@@ -291,6 +344,15 @@ docker-compose down
 ```
 
 ### Reset Database (Remove all data and volumes)
+
+**Development setup:**
+```bash
+make docker-dev-reset
+# This removes development containers, networks, AND database volumes
+# ⚠️ Warning: All data will be deleted!
+```
+
+**Production setup:**
 ```bash
 make docker-reset
 # This removes containers, networks, AND database volumes
@@ -304,6 +366,21 @@ Application entry point. Initializes config, database, and starts the server.
 
 ### `embed.go`
 Embedded file system for database migrations. Uses Go's `embed` package to bundle migration files into the binary.
+
+### `Dockerfile`
+Production-ready multi-stage Docker build. Compiles Go code into an optimized binary with minimal dependencies.
+
+### `Dockerfile.dev`
+Development Docker image with hot reload support using air. Includes Go compiler and air tool for watching code changes.
+
+### `.air.toml`
+Configuration file for air hot reload tool. Specifies which files to watch, build commands, and reload behavior.
+
+### `docker-compose.yml`
+Production Docker Compose configuration. Runs compiled binary in isolated containers with PostgreSQL.
+
+### `docker-compose.dev.yml`
+Development Docker Compose configuration. Runs application with air hot reload and mounts source code as volume for instant updates.
 
 ### `config/`
 Configuration management and database setup.
@@ -334,28 +411,56 @@ JWT token generation and validation.
 
 ## 🔄 Development Workflow
 
-> ⚠️ **Important:** Choose ONE path below. Do NOT run both Docker and Local development at the same time - they will conflict on port 4000.
+> ⚠️ **Important:** Choose ONE path below. Do NOT run multiple paths at the same time - they will conflict on port 4000.
 
-### With Docker (Recommended)
+### With Docker + Hot Reload ⭐ (Recommended)
 ```bash
-make docker-up          # Start database and app together
-make docker-logs        # View logs (in another terminal)
+make docker-dev         # Start database and app with hot reload
+make docker-dev-logs    # View logs (in another terminal)
 make test              # Run tests in another terminal
-make docker-down       # Stop containers when done
+make docker-dev-down   # Stop containers when done
 ```
 
-**Note:** After `make docker-up`, the application is already running. Do NOT run `make run`.
+**Features:**
+- ✅ Instant reload on code changes (no rebuild needed)
+- ✅ Database in Docker (simple setup)
+- ✅ Production-like environment
+- 💡 Perfect for rapid development
+
+**When code changes:**
+1. Edit file (e.g., `internal/handlers/books.go`)
+2. Save file
+3. Air automatically detects changes and rebuilds
+4. Refresh `http://localhost:4000` → see your changes instantly!
+
+### With Docker (Production-like, No Hot Reload)
+```bash
+make docker-up         # Start database and production-like app
+make docker-logs       # View logs (in another terminal)
+make test             # Run tests in another terminal
+make docker-down      # Stop containers when done
+```
+
+**Features:**
+- ✅ Production-ready build
+- ✅ Uses compiled binary
+- ❌ No hot reload (need rebuild on changes)
 
 ### Local Development (without Docker)
 ```bash
-make run               # Start application
+make run               # Start application with compiled binary
 make test              # Run tests in another terminal
+make dev               # OR run with hot reload (requires air installed locally)
 make migrate           # Run migrations
 make seed              # Seed sample data
-make dev               # Run with hot reload (requires air)
 ```
 
-**Note:** Make sure PostgreSQL is running locally before `make run`. Do NOT run `make docker-up`.
+**Features:**
+- ✅ Hot reload with local air (`make dev`)
+- ❌ Need to setup PostgreSQL locally
+- 💡 Lightest setup, full control
+
+**Note:** Make sure PostgreSQL is running locally before `make run` or `make dev`.
 
 ### Development Steps
 1. **Create models** in `internal/models/`

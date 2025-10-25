@@ -1,4 +1,4 @@
-.PHONY: help build run test clean migrate seed docker-up docker-down install-deps
+.PHONY: help build run test clean migrate seed docker-up docker-down docker-logs docker-reset docker-dev docker-dev-logs docker-dev-down docker-dev-reset install-deps
 
 # Variables
 APP_NAME=go-fiber-boilerplate
@@ -91,6 +91,22 @@ docker-reset: ## Reset Docker containers and volumes (removes all data)
 	@echo "Resetting Docker containers and volumes..."
 	@docker-compose down -v
 	@echo "Containers and volumes removed. Restart with: make docker-up"
+
+docker-dev: ## Start Docker containers with hot reload (development mode)
+	@echo "Starting Docker containers with hot reload..."
+	@docker-compose -f docker-compose.dev.yml up -d
+
+docker-dev-logs: ## View Docker development logs
+	@docker-compose -f docker-compose.dev.yml logs -f
+
+docker-dev-down: ## Stop Docker development containers
+	@echo "Stopping Docker development containers..."
+	@docker-compose -f docker-compose.dev.yml down
+
+docker-dev-reset: ## Reset Docker development containers and volumes
+	@echo "Resetting Docker development containers and volumes..."
+	@docker-compose -f docker-compose.dev.yml down -v
+	@echo "Development containers and volumes removed. Restart with: make docker-dev"
 
 all: clean install-deps build test ## Clean, install, build and test
 
