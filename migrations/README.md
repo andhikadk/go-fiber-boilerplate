@@ -268,7 +268,7 @@ DB_DRIVER=postgres
 DB_HOST=localhost
 DB_PORT=5432
 DB_USER=postgres
-DB_PASSWORD=password
+DB_PASSWORD=postgres
 DB_NAME=fiber_boilerplate
 DB_SSL_MODE=disable
 ```

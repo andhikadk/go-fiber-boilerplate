@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"flag"
 	"fmt"
 	"log"
@@ -19,9 +18,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"gorm.io/gorm"
 )
-
-//go:embed ../migrations/*
-var migrationsFS embed.FS
 
 func main() {
 	// Parse command line flags
@@ -47,7 +43,7 @@ func main() {
 	if *migrateCmd != "" {
 		if *migrateCmd == "sql" || *migrateCmd == "true" {
 			log.Println("Running SQL migrations from embedded files...")
-			if err := database.MigrateFromFS(db, migrationsFS); err != nil {
+			if err := database.MigrateFromFS(db, MigrationsFS); err != nil {
 				log.Fatalf("Migration failed: %v", err)
 			}
 		}
@@ -57,7 +53,7 @@ func main() {
 	// Handle seed command
 	if *seedCmd {
 		log.Println("Seeding database...")
-		if err := database.SeedFromFS(db, migrationsFS); err != nil {
+		if err := database.SeedFromFS(db, MigrationsFS); err != nil {
 			log.Fatalf("Seeding failed: %v", err)
 		}
 		log.Println("Seeding completed successfully")

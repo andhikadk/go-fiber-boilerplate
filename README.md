@@ -21,8 +21,8 @@ A production-ready boilerplate for building REST APIs with **Fiber**, a fast and
 
 ```
 go-fiber-boilerplate/
-├── cmd/
-│   └── main.go                 # Entry point
+├── main.go                     # Application entry point
+├── embed.go                    # Embedded migrations
 ├── config/
 │   ├── config.go               # Configuration management
 │   └── database.go             # Database setup
@@ -36,13 +36,14 @@ go-fiber-boilerplate/
 ├── pkg/
 │   ├── utils/                  # Utility functions
 │   └── jwt/                    # JWT utilities
-├── migrations/                 # Database migrations
+├── migrations/                 # Database migrations (SQL files)
 ├── tests/                      # Test files
 ├── .env.example                # Environment template
 ├── go.mod & go.sum             # Dependencies
-├── Dockerfile                  # Container image
-├── docker-compose.yml          # Compose configuration
-├── Makefile                    # Build commands
+├── Dockerfile                  # Multi-stage Docker build
+├── docker-compose.yml          # Docker Compose configuration
+├── .dockerignore                # Docker build ignore rules
+├── Makefile                    # Build and development commands
 └── README.md                   # This file
 ```
 
@@ -100,25 +101,40 @@ cp .env.example .env
 # Edit .env with your configuration
 ```
 
-4. **Setup database**
+4. **Setup database and run application**
+
+**Option A: Using Docker Compose (Recommended)**
 ```bash
-# Using Docker
 make docker-up
-
-# Or manually create PostgreSQL database
-createdb fiber_boilerplate
 ```
+This will:
+- Start PostgreSQL database (accessible at `localhost:6543`)
+- Run migrations automatically
+- Start the API on `http://localhost:4000`
 
-5. **Run application**
+> ⚠️ **Important:** The application is already running inside Docker! You do NOT need to run `make run` after this. The API is ready at `http://localhost:4000`
+
+**Option B: Local Development (without Docker)**
+```bash
+# Create PostgreSQL database manually
+createdb fiber_boilerplate
+
+# Run migrations
+make migrate
+
+# Run application
+make run
+```
+The API will be available at `http://localhost:4000`
+
+## 🚀 Usage
+
+### Run Application
 ```bash
 make run
 # or
-go run cmd/main.go
+go run main.go
 ```
-
-The API will be available at `http://localhost:3000`
-
-## 🚀 Usage
 
 ### Build
 ```bash
@@ -197,8 +213,10 @@ DELETE /api/books/:id    # Delete book (requires auth)
 All configuration is managed through `.env` file. See `.env.example` for all available options.
 
 ### Key Configuration
-- `PORT` - Server port (default: 3000)
+- `PORT` - Server port (default: 4000)
 - `ENV` - Environment (development/production)
+- `DB_HOST` - Database host (localhost for local, postgres for Docker)
+- `DB_PORT` - Database port (5432 for local/Docker internal, 6543 for Docker host access)
 - `DB_DRIVER` - Database driver (postgres/sqlite)
 - `JWT_SECRET` - Secret key for JWT signing
 - `CORS_ALLOWED_ORIGINS` - Allowed origins for CORS
@@ -226,24 +244,66 @@ go tool cover -html=coverage.out
 
 ### Build and Run with Docker Compose
 ```bash
+make docker-up
+# or
 docker-compose up -d
 ```
 
 This will:
 - Build the Fiber application
-- Start PostgreSQL database
-- Create necessary tables
-- Expose API on port 3000
+- Start PostgreSQL database (port 6543 from host, 5432 internal)
+- Run database migrations automatically
+- Expose API on port 4000 (`http://localhost:4000`)
+
+### View Logs
+```bash
+make docker-logs
+# or
+docker-compose logs -f fiber_app    # Just app logs
+docker-compose logs -f postgres     # Just database logs
+```
+
+### Check Container Status
+```bash
+docker-compose ps
+```
+
+Expected output (both containers should be "Up"):
+```
+NAME                    STATUS
+fiber_boilerplate_app   Up (healthy)
+fiber_boilerplate_db    Up (healthy)
+```
+
+### Verify Application is Running
+```bash
+# Check if app is responding
+curl http://localhost:4000/health
+
+# Expected response: {"status":"ok"}
+```
 
 ### Stop
 ```bash
+make docker-down
+# or
 docker-compose down
+```
+
+### Reset Database (Remove all data and volumes)
+```bash
+make docker-reset
+# This removes containers, networks, AND database volumes
+# ⚠️ Warning: All data will be deleted!
 ```
 
 ## 📖 Project Structure Details
 
-### `cmd/main.go`
+### `main.go`
 Application entry point. Initializes config, database, and starts the server.
+
+### `embed.go`
+Embedded file system for database migrations. Uses Go's `embed` package to bundle migration files into the binary.
 
 ### `config/`
 Configuration management and database setup.
@@ -274,6 +334,30 @@ JWT token generation and validation.
 
 ## 🔄 Development Workflow
 
+> ⚠️ **Important:** Choose ONE path below. Do NOT run both Docker and Local development at the same time - they will conflict on port 4000.
+
+### With Docker (Recommended)
+```bash
+make docker-up          # Start database and app together
+make docker-logs        # View logs (in another terminal)
+make test              # Run tests in another terminal
+make docker-down       # Stop containers when done
+```
+
+**Note:** After `make docker-up`, the application is already running. Do NOT run `make run`.
+
+### Local Development (without Docker)
+```bash
+make run               # Start application
+make test              # Run tests in another terminal
+make migrate           # Run migrations
+make seed              # Seed sample data
+make dev               # Run with hot reload (requires air)
+```
+
+**Note:** Make sure PostgreSQL is running locally before `make run`. Do NOT run `make docker-up`.
+
+### Development Steps
 1. **Create models** in `internal/models/`
 2. **Create handlers** in `internal/handlers/`
 3. **Add business logic** in `internal/services/`

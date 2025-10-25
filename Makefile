@@ -2,7 +2,7 @@
 
 # Variables
 APP_NAME=go-fiber-boilerplate
-MAIN_PATH=cmd/main.go
+MAIN_PATH=main.go
 BINARY_NAME=./bin/$(APP_NAME)
 
 help: ## Display this help screen
@@ -86,6 +86,11 @@ docker-down: ## Stop Docker containers
 
 docker-logs: ## View Docker logs
 	@docker-compose logs -f
+
+docker-reset: ## Reset Docker containers and volumes (removes all data)
+	@echo "Resetting Docker containers and volumes..."
+	@docker-compose down -v
+	@echo "Containers and volumes removed. Restart with: make docker-up"
 
 all: clean install-deps build test ## Clean, install, build and test
 
