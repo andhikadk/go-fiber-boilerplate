@@ -8,6 +8,7 @@ A production-ready boilerplate for building REST APIs with **Fiber**, a fast and
 - **JWT Authentication** - Secure token-based authentication
 - **GORM ORM** - Database abstraction layer
 - **PostgreSQL & SQLite** - Multiple database support
+- **Concurrent Programming Examples** - 7 production-ready concurrency patterns
 - **Middleware Stack** - CORS, Logger, Recovery, Helmet
 - **Request Validation** - Struct-based validation
 - **Error Handling** - Centralized error management
@@ -21,33 +22,41 @@ A production-ready boilerplate for building REST APIs with **Fiber**, a fast and
 
 ```
 go-fiber-boilerplate/
-├── main.go                     # Application entry point
-├── embed.go                    # Embedded migrations
+├── main.go                        # Application entry point
+├── embed.go                       # Embedded migrations
 ├── config/
-│   ├── config.go               # Configuration management
-│   └── database.go             # Database setup
+│   ├── config.go                  # Configuration management
+│   └── database.go                # Database setup
 ├── internal/
-│   ├── handlers/               # HTTP handlers
-│   ├── models/                 # Data structures
-│   ├── services/               # Business logic
-│   ├── middleware/             # Custom middlewares
-│   ├── database/               # Database layer
-│   └── routes/                 # Route definitions
+│   ├── handlers/                  # HTTP handlers
+│   │   ├── auth.go                # Authentication handlers
+│   │   ├── books.go               # Books CRUD handlers
+│   │   ├── concurrent.go          # Concurrent patterns demo handlers
+│   │   └── health.go              # Health check handlers
+│   ├── models/                    # Data structures
+│   ├── services/                  # Business logic
+│   │   ├── auth_service.go        # Authentication service
+│   │   ├── book_service.go        # Books service
+│   │   └── concurrent_service.go  # Concurrent patterns service
+│   ├── middleware/                # Custom middlewares
+│   ├── database/                  # Database layer
+│   └── routes/                    # Route definitions
 ├── pkg/
-│   ├── utils/                  # Utility functions
-│   └── jwt/                    # JWT utilities
-├── migrations/                 # Database migrations (SQL files)
-├── tests/                      # Test files
-├── .env.example                # Environment template
-├── go.mod & go.sum             # Dependencies
-├── Dockerfile                  # Multi-stage Docker build (production)
-├── Dockerfile.dev              # Development Docker with hot reload
-├── docker-compose.yml          # Production Docker Compose configuration
-├── docker-compose.dev.yml      # Development Docker Compose with hot reload
-├── .air.toml                   # Air configuration for hot reload
-├── .dockerignore                # Docker build ignore rules
-├── Makefile                    # Build and development commands
-└── README.md                   # This file
+│   ├── utils/                     # Utility functions
+│   └── jwt/                       # JWT utilities
+├── migrations/                    # Database migrations (SQL files)
+├── tests/                         # Test files
+├── .env.example                   # Environment template
+├── go.mod & go.sum                # Dependencies
+├── Dockerfile                     # Multi-stage Docker build (production)
+├── Dockerfile.dev                 # Development Docker with hot reload
+├── docker-compose.yml             # Production Docker Compose configuration
+├── docker-compose.dev.yml         # Development Docker Compose with hot reload
+├── .air.toml                      # Air configuration for hot reload
+├── .dockerignore                  # Docker build ignore rules
+├── Makefile                       # Build and development commands
+├── README.md                      # This file
+└── CLAUDE.md                      # Claude Code instructions
 ```
 
 ## 🛠️ Tech Stack
@@ -189,7 +198,7 @@ make test-coverage       # Run tests with coverage report
 
 ### Database
 ```bash
-make migrate             # Run migrations
+make migrate            # Run migrations
 make seed               # Seed sample data
 ```
 
@@ -240,6 +249,128 @@ POST   /api/books        # Create book (requires auth)
 PUT    /api/books/:id    # Update book (requires auth)
 DELETE /api/books/:id    # Delete book (requires auth)
 ```
+
+### Concurrent Patterns (Protected) 🆕
+```
+GET    /api/concurrent                    # Overview of all patterns
+GET    /api/concurrent/parallel           # Parallel processing with goroutines
+GET    /api/concurrent/worker-pool        # Worker pool pattern
+GET    /api/concurrent/fan-out-fan-in     # Fan-out/fan-in pattern
+GET    /api/concurrent/pipeline           # Pipeline pattern
+POST   /api/concurrent/bulk-create        # Semaphore (rate limiting)
+GET    /api/concurrent/timeout/:id        # Timeout pattern
+GET    /api/concurrent/monitor/:id        # Select with multiple channels
+```
+
+## ⚡ Concurrent Programming Patterns
+
+This boilerplate includes **7 production-ready concurrent programming patterns** to help developers understand and implement Go's concurrency features.
+
+### 🎯 Why Learn Concurrency?
+
+Go's concurrency model (goroutines and channels) is one of its most powerful features. Understanding these patterns will help you:
+
+- **Build faster applications** - Process multiple tasks simultaneously
+- **Handle high traffic** - Scale your API to serve thousands of requests
+- **Implement background jobs** - Run tasks asynchronously without blocking
+- **Control resource usage** - Prevent overwhelming your database or external APIs
+
+### 📚 Available Patterns
+
+| Pattern | Use Case | Example |
+|---------|----------|---------|
+| **Basic Goroutines + WaitGroup** | Parallel data fetching | Fetch multiple books simultaneously |
+| **Worker Pool** | Rate limiting, job queues | Process tasks with limited workers |
+| **Fan-Out/Fan-In** | Multi-source aggregation | Search across multiple fields in parallel |
+| **Pipeline** | Multi-stage processing | ETL operations with stages |
+| **Semaphore (Rate Limiting)** | API rate limiting | Limit concurrent database writes |
+| **Timeout** | External API calls | Cancel slow operations |
+| **Select with Multiple Channels** | Event handling | Monitor changes in real-time |
+
+### 🚀 Quick Start
+
+1. **Start the application:**
+   ```bash
+   make docker-dev
+   ```
+
+2. **Login to get JWT token:**
+   ```bash
+   curl -X POST http://localhost:4000/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"admin@example.com","password":"admin123"}'
+   ```
+
+3. **View all available patterns:**
+   ```bash
+   curl -H "Authorization: Bearer YOUR_TOKEN" \
+     http://localhost:4000/api/concurrent
+   ```
+
+4. **Test a pattern (Worker Pool example):**
+   ```bash
+   curl -H "Authorization: Bearer YOUR_TOKEN" \
+     "http://localhost:4000/api/concurrent/worker-pool?ids=1,2,3,4,5&workers=3"
+   ```
+
+### 📖 Pattern Details
+
+Each pattern includes:
+- **Production-ready code** with comprehensive error handling
+- **Context-based cancellation** for graceful shutdown
+- **Detailed comments** explaining each step
+- **Real-world use cases** demonstrated via API endpoints
+
+All patterns are fully functional and can be tested immediately via the API endpoints above.
+
+### 💡 Key Concepts
+
+**Goroutines** - Lightweight threads managed by Go runtime
+```go
+go func() {
+    // This runs concurrently
+}()
+```
+
+**Channels** - Communication between goroutines
+```go
+ch := make(chan int)
+ch <- 42        // Send
+value := <-ch   // Receive
+```
+
+**Select** - Handle multiple channels
+```go
+select {
+case msg := <-ch1:
+    // Handle ch1
+case msg := <-ch2:
+    // Handle ch2
+case <-time.After(5*time.Second):
+    // Timeout
+}
+```
+
+**Context** - Cancellation and timeouts
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+```
+
+### 🎓 Learning Path
+
+1. **Start with Pattern 1** (Basic Goroutines) - Understand fundamentals
+2. **Try Worker Pool** - Learn resource control
+3. **Explore Fan-Out/Fan-In** - Master result aggregation
+4. **Practice with examples** - Test all 7 patterns via API
+5. **Read source code** - Study implementation details
+6. **Apply to your project** - Use patterns in real scenarios
+
+### 📁 Source Files
+
+- **Service Layer:** `internal/services/concurrent_service.go` - All pattern implementations
+- **Handler Layer:** `internal/handlers/concurrent.go` - API endpoints for each pattern
+- **Routes:** `internal/routes/routes.go` - Route definitions
 
 ## 📝 Configuration
 
@@ -485,10 +616,17 @@ make seed              # Seed sample data
 
 ## 📚 Learning Resources
 
+### Framework & Libraries
 - [Fiber Documentation](https://docs.gofiber.io/)
 - [GORM Guide](https://gorm.io/docs/)
 - [JWT Go Library](https://github.com/golang-jwt/jwt)
 - [Go Best Practices](https://golang.org/doc/effective_go)
+
+### Concurrency (included in this boilerplate)
+- **Source Code**: `internal/services/concurrent_service.go` - 7 production-ready patterns
+- [Effective Go - Concurrency](https://go.dev/doc/effective_go#concurrency)
+- [Go by Example - Goroutines](https://gobyexample.com/goroutines)
+- [Go Concurrency Patterns (Video)](https://www.youtube.com/watch?v=f6kdp27TYZs)
 
 ## 🤝 Contributing
 
@@ -501,10 +639,6 @@ make seed              # Seed sample data
 ## 📄 License
 
 This project is open source and available under the MIT License.
-
-## 👨‍💻 Author
-
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
 
 ## 🙏 Acknowledgments
 

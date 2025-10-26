@@ -43,6 +43,22 @@ func SetupRoutes(app *fiber.App) {
 			booksGroup.Put("/:id", handlers.UpdateBook)
 			booksGroup.Delete("/:id", handlers.DeleteBook)
 		}
+
+		// Concurrent examples routes (educational/demo endpoints)
+		concurrentGroup := apiGroup.Group("/concurrent")
+		{
+			// Overview of all patterns
+			concurrentGroup.Get("/", handlers.GetConcurrentPatterns)
+
+			// Pattern demonstrations
+			concurrentGroup.Get("/parallel", handlers.ProcessBooksParallel)
+			concurrentGroup.Get("/worker-pool", handlers.ProcessBooksWorkerPool)
+			concurrentGroup.Get("/fan-out-fan-in", handlers.SearchBooksMultipleSources)
+			concurrentGroup.Get("/pipeline", handlers.ProcessBooksPipeline)
+			concurrentGroup.Post("/bulk-create", handlers.BulkCreateBooksWithRateLimit)
+			concurrentGroup.Get("/timeout/:id", handlers.FetchBookWithTimeout)
+			concurrentGroup.Get("/monitor/:id", handlers.MonitorBookUpdates)
+		}
 	}
 
 	// 404 handler
