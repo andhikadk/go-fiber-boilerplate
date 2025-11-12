@@ -9,6 +9,9 @@ import (
 	"go-fiber-boilerplate/internal/database"
 	"go-fiber-boilerplate/internal/middleware"
 	"go-fiber-boilerplate/internal/routes"
+	"go-fiber-boilerplate/internal/utils"
+
+	_ "go-fiber-boilerplate/docs" // Import generated docs
 
 	"github.com/gofiber/fiber/v2"
 	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
@@ -18,6 +21,23 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"gorm.io/gorm"
 )
+
+//	@title						Go Fiber REST API Boilerplate
+//	@version					1.0
+//	@description				A production-ready REST API boilerplate built with Go Fiber, GORM, JWT authentication, and PostgreSQL/SQLite
+//	@termsOfService				http://swagger.io/terms/
+//	@contact.name				API Support
+//	@contact.url				https://github.com/yourusername/go-fiber-boilerplate
+//	@contact.email				support@example.com
+//	@license.name				MIT
+//	@license.url				https://opensource.org/licenses/MIT
+//	@host						localhost:3000
+//	@BasePath					/
+//	@schemes					http https
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Type "Bearer" followed by a space and JWT token.
 
 func main() {
 	// Parse command line flags
@@ -30,6 +50,11 @@ func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Initialize logger
+	if err := utils.InitLogger(); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 
 	// Initialize database

@@ -5,6 +5,7 @@ import (
 	"go-fiber-boilerplate/internal/middleware"
 
 	"github.com/gofiber/fiber/v2"
+	fiberSwagger "github.com/gofiber/swagger"
 )
 
 // SetupRoutes configures all application routes
@@ -12,6 +13,9 @@ func SetupRoutes(app *fiber.App) {
 	// Health check routes (public)
 	app.Get("/health", handlers.HealthCheck)
 	app.Get("/ready", handlers.ReadinessCheck)
+
+	// Swagger documentation (public)
+	app.Get("/swagger/*", fiberSwagger.HandlerDefault)
 
 	// Auth routes (public)
 	authGroup := app.Group("/auth")
@@ -45,20 +49,21 @@ func SetupRoutes(app *fiber.App) {
 		}
 
 		// Concurrent examples routes (educational/demo endpoints)
-		concurrentGroup := apiGroup.Group("/concurrent")
-		{
-			// Overview of all patterns
-			concurrentGroup.Get("/", handlers.GetConcurrentPatterns)
+		// TODO: These will be moved to documentation (docs/concurrent-patterns.md)
+		// concurrentGroup := apiGroup.Group("/concurrent")
+		// {
+		// 	// Overview of all patterns
+		// 	concurrentGroup.Get("/", handlers.GetConcurrentPatterns)
 
-			// Pattern demonstrations
-			concurrentGroup.Get("/parallel", handlers.ProcessBooksParallel)
-			concurrentGroup.Get("/worker-pool", handlers.ProcessBooksWorkerPool)
-			concurrentGroup.Get("/fan-out-fan-in", handlers.SearchBooksMultipleSources)
-			concurrentGroup.Get("/pipeline", handlers.ProcessBooksPipeline)
-			concurrentGroup.Post("/bulk-create", handlers.BulkCreateBooksWithRateLimit)
-			concurrentGroup.Get("/timeout/:id", handlers.FetchBookWithTimeout)
-			concurrentGroup.Get("/monitor/:id", handlers.MonitorBookUpdates)
-		}
+		// 	// Pattern demonstrations
+		// 	concurrentGroup.Get("/parallel", handlers.ProcessBooksParallel)
+		// 	concurrentGroup.Get("/worker-pool", handlers.ProcessBooksWorkerPool)
+		// 	concurrentGroup.Get("/fan-out-fan-in", handlers.SearchBooksMultipleSources)
+		// 	concurrentGroup.Get("/pipeline", handlers.ProcessBooksPipeline)
+		// 	concurrentGroup.Post("/bulk-create", handlers.BulkCreateBooksWithRateLimit)
+		// 	concurrentGroup.Get("/timeout/:id", handlers.FetchBookWithTimeout)
+		// 	concurrentGroup.Get("/monitor/:id", handlers.MonitorBookUpdates)
+		// }
 	}
 
 	// 404 handler

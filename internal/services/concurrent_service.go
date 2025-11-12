@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"go-fiber-boilerplate/internal/dto"
 	"go-fiber-boilerplate/internal/models"
 
 	"gorm.io/gorm"
@@ -318,7 +319,7 @@ func (s *ConcurrentService) enrichBooks(ctx context.Context, in <-chan models.Bo
 
 // BulkCreateBooksWithRateLimit demonstrates semaphore pattern for rate limiting
 // Use case: Limit concurrent operations (e.g., API calls, DB writes)
-func (s *ConcurrentService) BulkCreateBooksWithRateLimit(ctx context.Context, books []models.CreateBookRequest, maxConcurrent int) ([]models.Book, error) {
+func (s *ConcurrentService) BulkCreateBooksWithRateLimit(ctx context.Context, books []dto.CreateBookRequest, maxConcurrent int) ([]models.Book, error) {
 	sem := make(chan struct{}, maxConcurrent) // Semaphore
 	var wg sync.WaitGroup
 	var mu sync.Mutex
@@ -333,7 +334,7 @@ func (s *ConcurrentService) BulkCreateBooksWithRateLimit(ctx context.Context, bo
 		}
 
 		wg.Add(1)
-		go func(req models.CreateBookRequest) {
+		go func(req dto.CreateBookRequest) {
 			defer wg.Done()
 
 			// Acquire semaphore
@@ -341,10 +342,10 @@ func (s *ConcurrentService) BulkCreateBooksWithRateLimit(ctx context.Context, bo
 			defer func() { <-sem }() // Release semaphore
 
 			book := models.Book{
-				Title:       req.Title,
-				Author:      req.Author,
-				ISBN:        req.ISBN,
-				Description: req.Description,
+				Title:  req.Title,
+				Author: req.Author,
+				Year:   req.Year,
+				ISBN:   req.ISBN,
 			}
 
 			if err := s.db.Create(&book).Error; err != nil {

@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 
-	"go-fiber-boilerplate/internal/database"
+	"go-fiber-boilerplate/internal/dto"
 	"go-fiber-boilerplate/internal/models"
 
 	"gorm.io/gorm"
@@ -14,10 +14,10 @@ type BookService struct {
 	db *gorm.DB
 }
 
-// NewBookService creates a new book service
-func NewBookService() *BookService {
+// NewBookService creates a new book service with explicit dependency injection
+func NewBookService(db *gorm.DB) *BookService {
 	return &BookService{
-		db: database.GetDB(),
+		db: db,
 	}
 }
 
@@ -53,7 +53,7 @@ func (s *BookService) GetBookByID(id uint) (*models.Book, error) {
 }
 
 // CreateBook creates a new book
-func (s *BookService) CreateBook(req *models.CreateBookRequest) (*models.Book, error) {
+func (s *BookService) CreateBook(req *dto.CreateBookRequest) (*models.Book, error) {
 	book := &models.Book{
 		Title:       req.Title,
 		Author:      req.Author,
@@ -69,7 +69,7 @@ func (s *BookService) CreateBook(req *models.CreateBookRequest) (*models.Book, e
 }
 
 // UpdateBook updates an existing book
-func (s *BookService) UpdateBook(id uint, req *models.UpdateBookRequest) (*models.Book, error) {
+func (s *BookService) UpdateBook(id uint, req *dto.UpdateBookRequest) (*models.Book, error) {
 	book, err := s.GetBookByID(id)
 	if err != nil {
 		return nil, err
@@ -77,17 +77,17 @@ func (s *BookService) UpdateBook(id uint, req *models.UpdateBookRequest) (*model
 
 	// Update only provided fields
 	updateData := map[string]interface{}{}
-	if req.Title != "" {
-		updateData["title"] = req.Title
+	if req.Title != nil {
+		updateData["title"] = *req.Title
 	}
-	if req.Author != "" {
-		updateData["author"] = req.Author
+	if req.Author != nil {
+		updateData["author"] = *req.Author
 	}
-	if req.Year > 0 {
-		updateData["year"] = req.Year
+	if req.Year != nil {
+		updateData["year"] = *req.Year
 	}
-	if req.ISBN != "" {
-		updateData["isbn"] = req.ISBN
+	if req.ISBN != nil {
+		updateData["isbn"] = *req.ISBN
 	}
 
 	if err := s.db.Model(book).Updates(updateData).Error; err != nil {

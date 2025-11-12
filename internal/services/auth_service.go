@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"go-fiber-boilerplate/config"
-	"go-fiber-boilerplate/internal/database"
+	"go-fiber-boilerplate/internal/dto"
 	"go-fiber-boilerplate/internal/models"
 	"go-fiber-boilerplate/pkg/jwt"
 	"go-fiber-boilerplate/pkg/utils"
@@ -18,15 +18,15 @@ type AuthService struct {
 	db *gorm.DB
 }
 
-// NewAuthService creates a new auth service
-func NewAuthService() *AuthService {
+// NewAuthService creates a new auth service with explicit dependency injection
+func NewAuthService(db *gorm.DB) *AuthService {
 	return &AuthService{
-		db: database.GetDB(),
+		db: db,
 	}
 }
 
 // Register registers a new user
-func (s *AuthService) Register(req *models.RegisterRequest) (*models.User, error) {
+func (s *AuthService) Register(req *dto.RegisterRequest) (*models.User, error) {
 	// Check if user already exists
 	var existingUser models.User
 	if err := s.db.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
@@ -58,7 +58,7 @@ func (s *AuthService) Register(req *models.RegisterRequest) (*models.User, error
 }
 
 // Login authenticates a user and returns tokens
-func (s *AuthService) Login(req *models.LoginRequest) (*models.LoginResponse, error) {
+func (s *AuthService) Login(req *dto.LoginRequest) (*dto.LoginResponse, error) {
 	// Find user by email
 	var user models.User
 	if err := s.db.Where("email = ?", req.Email).First(&user).Error; err != nil {
@@ -91,7 +91,7 @@ func (s *AuthService) Login(req *models.LoginRequest) (*models.LoginResponse, er
 		return nil, err
 	}
 
-	return &models.LoginResponse{
+	return &dto.LoginResponse{
 		Token:        accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    int64(config.AppConfig.JWTExpiry.Seconds()),

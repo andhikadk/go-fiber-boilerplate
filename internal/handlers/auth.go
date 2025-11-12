@@ -1,158 +1,257 @@
 package handlers
 
 import (
-	"go-fiber-boilerplate/internal/models"
+	"go-fiber-boilerplate/internal/database"
+	"go-fiber-boilerplate/internal/dto"
 	"go-fiber-boilerplate/internal/middleware"
 	"go-fiber-boilerplate/internal/services"
-	"go-fiber-boilerplate/pkg/utils"
+	"go-fiber-boilerplate/internal/utils"
+	pkgUtils "go-fiber-boilerplate/pkg/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// Register handles user registration
+// Register godoc
+//
+//	@Summary		Register a new user
+//	@Description	Register a new user with name, email, and password
+//	@Tags			Authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.RegisterRequest		true	"Registration request"
+//	@Success		201		{object}	models.APIResponse		"User registered successfully"
+//	@Failure		400		{object}	models.APIResponse		"Invalid request or validation error"
+//	@Failure		409		{object}	models.APIResponse		"Email already registered"
+//	@Router			/auth/register [post]
 func Register(c *fiber.Ctx) error {
-	var req models.RegisterRequest
+	var req dto.RegisterRequest
 
-	// Parse and validate request
+	// Parse request body
 	if err := c.BodyParser(&req); err != nil {
-		return utils.BadRequestResponse(c, "invalid request body")
+		utils.ErrorLogger.Printf("[Register] Failed to parse request body: %v", err)
+		return pkgUtils.BadRequestResponse(c, "Invalid request body")
 	}
 
-	// Validate input
-	if req.Name == "" || req.Email == "" || req.Password == "" {
-		return utils.BadRequestResponse(c, "name, email, and password are required")
-	}
-
-	if !utils.IsPasswordValid(req.Password) {
-		return utils.BadRequestResponse(c, "password must be at least 6 characters")
+	// Validate request using DTO's self-validation
+	if err := req.Validate(); err != nil {
+		utils.ErrorLogger.Printf("[Register] Validation failed: %v", err)
+		return pkgUtils.BadRequestResponse(c, err.Error())
 	}
 
 	// Register user
-	authService := services.NewAuthService()
+	authService := services.NewAuthService(database.GetDB())
 	user, err := authService.Register(&req)
 	if err != nil {
-		return utils.ConflictResponse(c, err.Error())
+		utils.ErrorLogger.Printf("[Register] Registration failed for %s: %v", req.Email, err)
+		return pkgUtils.ConflictResponse(c, err.Error())
 	}
 
-	return utils.CreatedResponse(c, "User registered successfully", user.GetPublicUser())
+	utils.InfoLogger.Printf("[Register] User registered successfully: %s (ID: %d)", user.Email, user.ID)
+	return pkgUtils.CreatedResponse(c, "User registered successfully", user.GetPublicUser())
 }
 
-// Login handles user login
+// Login godoc
+//
+//	@Summary		User login
+//	@Description	Authenticate user and return access and refresh tokens
+//	@Tags			Authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.LoginRequest		true	"Login credentials"
+//	@Success		200		{object}	models.APIResponse{data=dto.LoginResponse}	"Login successful"
+//	@Failure		400		{object}	models.APIResponse		"Invalid request or validation error"
+//	@Failure		401		{object}	models.APIResponse		"Invalid credentials or inactive account"
+//	@Router			/auth/login [post]
 func Login(c *fiber.Ctx) error {
-	var req models.LoginRequest
+	var req dto.LoginRequest
 
-	// Parse and validate request
+	// Parse request body
 	if err := c.BodyParser(&req); err != nil {
-		return utils.BadRequestResponse(c, "invalid request body")
+		utils.ErrorLogger.Printf("[Login] Failed to parse request body: %v", err)
+		return pkgUtils.BadRequestResponse(c, "Invalid request body")
 	}
 
-	// Validate input
-	if req.Email == "" || req.Password == "" {
-		return utils.BadRequestResponse(c, "email and password are required")
+	// Validate request using DTO's self-validation
+	if err := req.Validate(); err != nil {
+		utils.ErrorLogger.Printf("[Login] Validation failed: %v", err)
+		return pkgUtils.BadRequestResponse(c, err.Error())
 	}
 
 	// Authenticate user
-	authService := services.NewAuthService()
+	authService := services.NewAuthService(database.GetDB())
 	loginResp, err := authService.Login(&req)
 	if err != nil {
-		return utils.UnauthorizedResponse(c, err.Error())
+		utils.ErrorLogger.Printf("[Login] Authentication failed for %s: %v", req.Email, err)
+		return pkgUtils.UnauthorizedResponse(c, err.Error())
 	}
 
-	return utils.SuccessResponse(c, fiber.StatusOK, "Login successful", loginResp)
+	utils.InfoLogger.Printf("[Login] User logged in successfully: %s", req.Email)
+	return pkgUtils.SuccessResponse(c, fiber.StatusOK, "Login successful", loginResp)
 }
 
-// RefreshToken refreshes the access token
+// RefreshToken godoc
+//
+//	@Summary		Refresh access token
+//	@Description	Generate a new access token using a valid refresh token
+//	@Tags			Authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		dto.RefreshTokenRequest		true	"Refresh token"
+//	@Success		200		{object}	models.APIResponse{data=dto.RefreshTokenResponse}	"Token refreshed successfully"
+//	@Failure		400		{object}	models.APIResponse		"Invalid request body"
+//	@Failure		401		{object}	models.APIResponse		"Invalid or expired refresh token"
+//	@Router			/auth/refresh [post]
 func RefreshToken(c *fiber.Ctx) error {
-	var req struct {
-		RefreshToken string `json:"refresh_token" binding:"required"`
+	var req dto.RefreshTokenRequest
+
+	// Parse request body
+	if err := c.BodyParser(&req); err != nil {
+		utils.ErrorLogger.Printf("[RefreshToken] Failed to parse request body: %v", err)
+		return pkgUtils.BadRequestResponse(c, "Invalid request body")
 	}
 
-	if err := c.BodyParser(&req); err != nil {
-		return utils.BadRequestResponse(c, "invalid request body")
+	// Validate request using DTO's self-validation
+	if err := req.Validate(); err != nil {
+		utils.ErrorLogger.Printf("[RefreshToken] Validation failed: %v", err)
+		return pkgUtils.BadRequestResponse(c, err.Error())
 	}
 
 	// Refresh token
-	authService := services.NewAuthService()
+	authService := services.NewAuthService(database.GetDB())
 	newAccessToken, err := authService.RefreshToken(req.RefreshToken)
 	if err != nil {
-		return utils.UnauthorizedResponse(c, err.Error())
+		utils.ErrorLogger.Printf("[RefreshToken] Token refresh failed: %v", err)
+		return pkgUtils.UnauthorizedResponse(c, err.Error())
 	}
 
-	return utils.SuccessResponse(c, fiber.StatusOK, "Token refreshed successfully", fiber.Map{
-		"token": newAccessToken,
+	utils.InfoLogger.Printf("[RefreshToken] Token refreshed successfully")
+	return pkgUtils.SuccessResponse(c, fiber.StatusOK, "Token refreshed successfully", dto.RefreshTokenResponse{
+		Token: newAccessToken,
 	})
 }
 
-// GetProfile retrieves current user profile
+// GetProfile godoc
+//
+//	@Summary		Get user profile
+//	@Description	Retrieve the authenticated user's profile information
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Success		200	{object}	models.APIResponse{data=dto.UserResponse}	"Profile retrieved successfully"
+//	@Failure		401	{object}	models.APIResponse						"Unauthorized or invalid token"
+//	@Failure		404	{object}	models.APIResponse						"User not found"
+//	@Router			/user/profile [get]
 func GetProfile(c *fiber.Ctx) error {
 	// Get user ID from context (set by auth middleware)
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
-		return utils.UnauthorizedResponse(c, "invalid user")
+		utils.ErrorLogger.Printf("[GetProfile] Failed to get user ID from context: %v", err)
+		return pkgUtils.UnauthorizedResponse(c, "Invalid user")
 	}
 
 	// Get user
-	authService := services.NewAuthService()
+	authService := services.NewAuthService(database.GetDB())
 	user, err := authService.GetUserByID(userID)
 	if err != nil {
-		return utils.NotFoundResponse(c, err.Error())
+		utils.ErrorLogger.Printf("[GetProfile] Failed to get user profile (ID: %d): %v", userID, err)
+		return pkgUtils.NotFoundResponse(c, err.Error())
 	}
 
-	return utils.SuccessResponse(c, fiber.StatusOK, "Profile retrieved successfully", user.GetPublicUser())
+	utils.InfoLogger.Printf("[GetProfile] Profile retrieved successfully (ID: %d)", userID)
+	return pkgUtils.SuccessResponse(c, fiber.StatusOK, "Profile retrieved successfully", user.GetPublicUser())
 }
 
-// UpdateProfile updates user profile
+// UpdateProfile godoc
+//
+//	@Summary		Update user profile
+//	@Description	Update the authenticated user's profile information
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body		dto.UpdateProfileRequest	true	"Profile update data"
+//	@Success		200		{object}	models.APIResponse{data=dto.UserResponse}	"Profile updated successfully"
+//	@Failure		400		{object}	models.APIResponse		"Invalid request or validation error"
+//	@Failure		401		{object}	models.APIResponse		"Unauthorized or invalid token"
+//	@Failure		500		{object}	models.APIResponse		"Failed to update profile"
+//	@Router			/user/profile [put]
 func UpdateProfile(c *fiber.Ctx) error {
 	// Get user ID from context
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
-		return utils.UnauthorizedResponse(c, "invalid user")
+		utils.ErrorLogger.Printf("[UpdateProfile] Failed to get user ID from context: %v", err)
+		return pkgUtils.UnauthorizedResponse(c, "Invalid user")
 	}
 
-	var req struct {
-		Name string `json:"name" binding:"required,min=2"`
-	}
+	var req dto.UpdateProfileRequest
 
+	// Parse request body
 	if err := c.BodyParser(&req); err != nil {
-		return utils.BadRequestResponse(c, "invalid request body")
+		utils.ErrorLogger.Printf("[UpdateProfile] Failed to parse request body: %v", err)
+		return pkgUtils.BadRequestResponse(c, "Invalid request body")
+	}
+
+	// Validate request using DTO's self-validation
+	if err := req.Validate(); err != nil {
+		utils.ErrorLogger.Printf("[UpdateProfile] Validation failed: %v", err)
+		return pkgUtils.BadRequestResponse(c, err.Error())
 	}
 
 	// Update user
-	authService := services.NewAuthService()
+	authService := services.NewAuthService(database.GetDB())
 	user, err := authService.UpdateUser(userID, req.Name)
 	if err != nil {
-		return utils.InternalErrorResponse(c, "failed to update profile")
+		utils.ErrorLogger.Printf("[UpdateProfile] Failed to update profile (ID: %d): %v", userID, err)
+		return pkgUtils.InternalErrorResponse(c, "Failed to update profile")
 	}
 
-	return utils.SuccessResponse(c, fiber.StatusOK, "Profile updated successfully", user.GetPublicUser())
+	utils.InfoLogger.Printf("[UpdateProfile] Profile updated successfully (ID: %d)", userID)
+	return pkgUtils.SuccessResponse(c, fiber.StatusOK, "Profile updated successfully", user.GetPublicUser())
 }
 
-// ChangePassword changes user password
+// ChangePassword godoc
+//
+//	@Summary		Change user password
+//	@Description	Change the authenticated user's password
+//	@Tags			Users
+//	@Accept			json
+//	@Produce		json
+//	@Security		BearerAuth
+//	@Param			request	body		dto.ChangePasswordRequest	true	"Password change data"
+//	@Success		200		{object}	models.APIResponse			"Password changed successfully"
+//	@Failure		400		{object}	models.APIResponse			"Invalid request or validation error"
+//	@Failure		401		{object}	models.APIResponse			"Unauthorized or invalid old password"
+//	@Router			/user/change-password [post]
 func ChangePassword(c *fiber.Ctx) error {
 	// Get user ID from context
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
-		return utils.UnauthorizedResponse(c, "invalid user")
+		utils.ErrorLogger.Printf("[ChangePassword] Failed to get user ID from context: %v", err)
+		return pkgUtils.UnauthorizedResponse(c, "Invalid user")
 	}
 
-	var req struct {
-		OldPassword string `json:"old_password" binding:"required"`
-		NewPassword string `json:"new_password" binding:"required,min=6"`
-	}
+	var req dto.ChangePasswordRequest
 
+	// Parse request body
 	if err := c.BodyParser(&req); err != nil {
-		return utils.BadRequestResponse(c, "invalid request body")
+		utils.ErrorLogger.Printf("[ChangePassword] Failed to parse request body: %v", err)
+		return pkgUtils.BadRequestResponse(c, "Invalid request body")
 	}
 
-	if req.OldPassword == req.NewPassword {
-		return utils.BadRequestResponse(c, "new password must be different from old password")
+	// Validate request using DTO's self-validation
+	if err := req.Validate(); err != nil {
+		utils.ErrorLogger.Printf("[ChangePassword] Validation failed: %v", err)
+		return pkgUtils.BadRequestResponse(c, err.Error())
 	}
 
 	// Change password
-	authService := services.NewAuthService()
+	authService := services.NewAuthService(database.GetDB())
 	if err := authService.ChangePassword(userID, req.OldPassword, req.NewPassword); err != nil {
-		return utils.UnauthorizedResponse(c, err.Error())
+		utils.ErrorLogger.Printf("[ChangePassword] Failed to change password (ID: %d): %v", userID, err)
+		return pkgUtils.UnauthorizedResponse(c, err.Error())
 	}
 
-	return utils.SuccessResponse(c, fiber.StatusOK, "Password changed successfully", nil)
+	utils.InfoLogger.Printf("[ChangePassword] Password changed successfully (ID: %d)", userID)
+	return pkgUtils.SuccessResponse(c, fiber.StatusOK, "Password changed successfully", nil)
 }

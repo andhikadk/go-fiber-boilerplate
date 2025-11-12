@@ -1,0 +1,861 @@
+basePath: /
+definitions:
+  dto.ChangePasswordRequest:
+    properties:
+      new_password:
+        example: newpassword123
+        type: string
+      old_password:
+        example: oldpassword123
+        type: string
+    type: object
+  dto.CreateBookRequest:
+    properties:
+      author:
+        example: Alan A. A. Donovan
+        type: string
+      isbn:
+        example: 978-0134190440
+        type: string
+      title:
+        example: The Go Programming Language
+        type: string
+      year:
+        example: 2015
+        type: integer
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        example: john@example.com
+        type: string
+      password:
+        example: password123
+        type: string
+    type: object
+  dto.LoginResponse:
+    properties:
+      expires_in:
+        example: 900
+        type: integer
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  dto.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  dto.RefreshTokenResponse:
+    properties:
+      token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+    type: object
+  dto.RegisterRequest:
+    properties:
+      email:
+        example: john@example.com
+        type: string
+      name:
+        example: John Doe
+        type: string
+      password:
+        example: password123
+        type: string
+    type: object
+  dto.UpdateBookRequest:
+    properties:
+      author:
+        example: Alan A. A. Donovan & Brian W. Kernighan
+        type: string
+      isbn:
+        example: 978-0134190440
+        type: string
+      title:
+        example: The Go Programming Language (Updated)
+        type: string
+      year:
+        example: 2016
+        type: integer
+    type: object
+  dto.UpdateProfileRequest:
+    properties:
+      name:
+        example: John Doe Updated
+        type: string
+    type: object
+  dto.UserResponse:
+    properties:
+      created_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+      email:
+        example: john@example.com
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_active:
+        example: true
+        type: boolean
+      name:
+        example: John Doe
+        type: string
+      role:
+        example: user
+        type: string
+      updated_at:
+        example: "2024-01-01T00:00:00Z"
+        type: string
+    type: object
+  handlers.BulkCreateBooksRequest:
+    type: object
+  models.APIResponse:
+    properties:
+      data: {}
+      error:
+        example: ""
+        type: string
+      message:
+        example: Success
+        type: string
+      status:
+        example: 200
+        type: integer
+    type: object
+  models.Book:
+    properties:
+      author:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      isbn:
+        type: string
+      pages:
+        type: integer
+      publisher:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      year:
+        type: integer
+    type: object
+  models.PaginatedResponse:
+    properties:
+      data: {}
+      limit:
+        example: 10
+        type: integer
+      message:
+        example: Success
+        type: string
+      page:
+        example: 1
+        type: integer
+      status:
+        example: 200
+        type: integer
+      total:
+        example: 100
+        type: integer
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+    url: https://github.com/yourusername/go-fiber-boilerplate
+  description: A production-ready REST API boilerplate built with Go Fiber, GORM,
+    JWT authentication, and PostgreSQL/SQLite
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Go Fiber REST API Boilerplate
+  version: "1.0"
+paths:
+  /api/books:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all books with pagination
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 10, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Books retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Book'
+                  type: array
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to fetch books
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all books
+      tags:
+      - Books
+    post:
+      consumes:
+      - application/json
+      description: Create a new book with title, author, year, and ISBN
+      parameters:
+      - description: Book creation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateBookRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Book created successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Book'
+              type: object
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to create book
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new book
+      tags:
+      - Books
+  /api/books/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a book by its ID (soft delete)
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Book deleted successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid book ID
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Book not found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a book
+      tags:
+      - Books
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific book by its ID
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Book retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Book'
+              type: object
+        "400":
+          description: Invalid book ID
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Book not found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get a book by ID
+      tags:
+      - Books
+    put:
+      consumes:
+      - application/json
+      description: Update an existing book's information
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Book update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateBookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Book updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.Book'
+              type: object
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: Book not found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update a book
+      tags:
+      - Books
+  /api/books/search:
+    get:
+      consumes:
+      - application/json
+      description: Search for books by title or author
+      parameters:
+      - description: Search query
+        in: query
+        name: q
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search results
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.Book'
+                  type: array
+              type: object
+        "400":
+          description: Search query is required
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Search failed
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Search books
+      tags:
+      - Books
+  /api/concurrent:
+    get:
+      description: Returns information about all available concurrent programming
+        patterns
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Patterns overview
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get concurrent patterns overview
+      tags:
+      - concurrent-examples
+  /api/concurrent/bulk-create:
+    post:
+      consumes:
+      - application/json
+      description: Creates multiple books with controlled concurrency using semaphore
+      parameters:
+      - description: Bulk create request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.BulkCreateBooksRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Books created successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Bulk create books with rate limiting
+      tags:
+      - concurrent-examples
+  /api/concurrent/fan-out-fan-in:
+    get:
+      consumes:
+      - application/json
+      description: Searches title, author, and description simultaneously and merges
+        results
+      parameters:
+      - description: Search query
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Search completed successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search books across multiple fields
+      tags:
+      - concurrent-examples
+  /api/concurrent/monitor/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Monitors a book for updates at regular intervals
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 2
+        description: Interval in seconds
+        in: query
+        name: interval
+        type: integer
+      - default: 10
+        description: Monitoring duration in seconds
+        in: query
+        name: duration
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Monitoring completed
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Monitor book updates (SSE-like)
+      tags:
+      - concurrent-examples
+  /api/concurrent/parallel:
+    get:
+      consumes:
+      - application/json
+      description: Fetches and processes multiple books simultaneously using goroutines
+        and WaitGroup
+      parameters:
+      - description: Comma-separated book IDs
+        example: 1,2,3,4,5
+        in: query
+        name: ids
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Books processed successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Process multiple books in parallel
+      tags:
+      - concurrent-examples
+  /api/concurrent/pipeline:
+    get:
+      consumes:
+      - application/json
+      description: 'Processes books through multiple stages: fetch -> filter -> enrich'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Pipeline completed successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Processing failed
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Process books through pipeline stages
+      tags:
+      - concurrent-examples
+  /api/concurrent/timeout/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Fetches a book with a configurable timeout
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - default: 5
+        description: Timeout in seconds
+        in: query
+        name: timeout
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Book fetched successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "408":
+          description: Request timeout
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Fetch book with timeout
+      tags:
+      - concurrent-examples
+  /api/concurrent/worker-pool:
+    get:
+      consumes:
+      - application/json
+      description: Processes books using a fixed number of workers for better resource
+        control
+      parameters:
+      - description: Comma-separated book IDs
+        example: 1,2,3,4,5
+        in: query
+        name: ids
+        required: true
+        type: string
+      - default: 3
+        description: Number of workers
+        in: query
+        name: workers
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Books processed successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Process books using worker pool
+      tags:
+      - concurrent-examples
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return access and refresh tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.LoginResponse'
+              type: object
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Invalid credentials or inactive account
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: User login
+      tags:
+      - Authentication
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Generate a new access token using a valid refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token refreshed successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RefreshTokenResponse'
+              type: object
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Invalid or expired refresh token
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Refresh access token
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user with name, email, and password
+      parameters:
+      - description: Registration request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "409":
+          description: Email already registered
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      summary: Register a new user
+      tags:
+      - Authentication
+  /user/change-password:
+    post:
+      consumes:
+      - application/json
+      description: Change the authenticated user's password
+      parameters:
+      - description: Password change data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Unauthorized or invalid old password
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Change user password
+      tags:
+      - Users
+  /user/profile:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve the authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "401":
+          description: Unauthorized or invalid token
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update the authenticated user's profile information
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Profile updated successfully
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.UserResponse'
+              type: object
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "401":
+          description: Unauthorized or invalid token
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+        "500":
+          description: Failed to update profile
+          schema:
+            $ref: '#/definitions/models.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Users
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
