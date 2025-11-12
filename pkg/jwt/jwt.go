@@ -110,15 +110,21 @@ func (tm *TokenManager) ValidateRefreshToken(tokenString string) (*RefreshClaims
 }
 
 // ExtractTokenFromHeader extracts token from Authorization header
+// Supports both formats:
+// - "Bearer <token>" (standard)
+// - "<token>" (direct token, auto-prepended with "Bearer ")
 func ExtractTokenFromHeader(authHeader string) (string, error) {
 	if authHeader == "" {
 		return "", fmt.Errorf("missing authorization header")
 	}
 
-	// Expected format: "Bearer <token>"
-	if len(authHeader) < 7 || authHeader[:7] != "Bearer " {
-		return "", fmt.Errorf("invalid authorization header format")
+	// Check if header starts with "Bearer "
+	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+		// Extract token after "Bearer "
+		return authHeader[7:], nil
 	}
 
-	return authHeader[7:], nil
+	// If no "Bearer " prefix, treat entire string as token
+	// This supports Swagger UI which may not include the prefix
+	return authHeader, nil
 }
