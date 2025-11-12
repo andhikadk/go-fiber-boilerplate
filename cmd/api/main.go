@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"go-fiber-boilerplate/assets"
 	"go-fiber-boilerplate/config"
 	"go-fiber-boilerplate/internal/database"
 	"go-fiber-boilerplate/internal/middleware"
@@ -68,7 +69,7 @@ func main() {
 	if *migrateCmd != "" {
 		if *migrateCmd == "sql" {
 			log.Println("Running SQL migrations from embedded files...")
-			if err := database.MigrateFromFS(db, MigrationsFS); err != nil {
+			if err := database.MigrateFromFS(db, assets.MigrationsFS); err != nil {
 				log.Fatalf("Migration failed: %v", err)
 			}
 		} else {
@@ -84,7 +85,7 @@ func main() {
 	// Handle seed command
 	if *seedCmd {
 		log.Println("Seeding database...")
-		if err := database.SeedFromFS(db, MigrationsFS); err != nil {
+		if err := database.SeedFromFS(db, assets.MigrationsFS); err != nil {
 			log.Fatalf("Seeding failed: %v", err)
 		}
 		log.Println("Seeding completed successfully")

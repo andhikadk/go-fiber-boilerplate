@@ -32,7 +32,7 @@ The boilerplate uses a **hybrid migration approach**:
 
 1. **Automatic Migration on Startup**
    ```bash
-   go run cmd/main.go
+   go run cmd/api/main.go
    # In development: Uses AutoMigrate (from models)
    # In production: Uses SQL migrations (from files)
    ```
@@ -41,14 +41,14 @@ The boilerplate uses a **hybrid migration approach**:
    ```bash
    make migrate-sql
    # or
-   go run cmd/main.go -migrate=sql
+   go run cmd/api/main.go -migrate=sql
    ```
 
 3. **Check Migration Status**
    ```bash
    make migrate-status
    # or
-   go run cmd/main.go -status
+   go run cmd/api/main.go -status
    ```
 
 ## Creating New Migrations
@@ -101,7 +101,7 @@ type NewModel struct {
 ```bash
 make migrate-sql
 # or
-go run cmd/main.go -migrate=sql
+go run cmd/api/main.go -migrate=sql
 ```
 
 ## Seeding Database
@@ -120,7 +120,7 @@ go run cmd/main.go -migrate=sql
 # Seed the database
 make seed
 # or
-go run cmd/main.go -seed
+go run cmd/api/main.go -seed
 
 # Check what seeds have been applied
 make migrate-status

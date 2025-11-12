@@ -2,7 +2,7 @@
 
 # Variables
 APP_NAME=go-fiber-boilerplate
-MAIN_PATH=main.go
+MAIN_PATH=cmd/api/main.go
 
 # Detect OS for binary extension
 ifeq ($(OS),Windows_NT)
@@ -25,16 +25,16 @@ install-deps: ## Install Go dependencies
 
 build: swagger ## Build the application (generates Swagger docs first)
 	@echo "Building $(APP_NAME)..."
-	@go build -o $(BINARY_NAME) .
+	@go build -o $(BINARY_NAME) ./cmd/api
 	@echo "Build complete: $(BINARY_NAME)"
 
 run: ## Run the application
 	@echo "Running $(APP_NAME)..."
-	@go run .
+	@go run ./cmd/api
 
 dev: ## Run in development mode with hot reload (requires air)
 	@echo "Running in development mode..."
-	@air --build.bin "$(AIR_BIN)" --build.cmd "go build -o $(AIR_BIN) ." || echo "air not installed. Install with: go install github.com/cosmtrek/air@latest"
+	@air --build.bin "$(AIR_BIN)" --build.cmd "go build -o $(AIR_BIN) ./cmd/api" || echo "air not installed. Install with: go install github.com/cosmtrek/air@latest"
 
 test: ## Run unit tests
 	@echo "Running tests..."
@@ -72,7 +72,7 @@ swagger-install: ## Install swag CLI tool for generating Swagger documentation
 
 swagger: ## Generate Swagger documentation
 	@echo "Generating Swagger documentation..."
-	@swag init
+	@swag init -g cmd/api/main.go
 	@echo "Swagger documentation generated in ./docs"
 
 swagger-fmt: ## Format Swagger comments
@@ -81,19 +81,19 @@ swagger-fmt: ## Format Swagger comments
 
 migrate: ## Run database migrations (AutoMigrate for dev)
 	@echo "Running migrations..."
-	@go run . -migrate=auto
+	@go run ./cmd/api -migrate=auto
 
 migrate-sql: ## Run SQL migrations from files
 	@echo "Running SQL migrations..."
-	@go run . -migrate=sql
+	@go run ./cmd/api -migrate=sql
 
 migrate-status: ## Show migration status
 	@echo "Migration status..."
-	@go run . -status
+	@go run ./cmd/api -status
 
 seed: ## Seed database with sample data
 	@echo "Seeding database..."
-	@go run . -seed
+	@go run ./cmd/api -seed
 
 docker-build: ## Build Docker image
 	@echo "Building Docker image..."

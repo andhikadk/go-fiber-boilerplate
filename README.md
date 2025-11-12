@@ -175,7 +175,7 @@ The API will be available at `http://localhost:4000`
 ```bash
 make run
 # or
-go run main.go
+go run cmd/api/main.go
 ```
 
 ### Build

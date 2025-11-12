@@ -77,21 +77,23 @@ make all               # Clean, install, build, and test
 The application follows a **layered architecture** with clear separation of concerns:
 
 ```
-main.go (entry point)
-  ├── config/ (configuration management)
-  ├── docs/ (Swagger/OpenAPI documentation - auto-generated)
-  ├── internal/ (core application logic)
-  │   ├── dto/ (Data Transfer Objects - API contracts)
-  │   ├── handlers/ (HTTP request handlers)
-  │   ├── services/ (business logic layer)
-  │   ├── models/ (domain models - database entities)
-  │   ├── middleware/ (request interceptors)
-  │   ├── database/ (DB initialization & migrations)
-  │   ├── routes/ (route definitions)
-  │   ├── testutil/ (testing utilities & fixtures)
-  │   └── utils/ (internal utilities - logging, etc.)
-  ├── pkg/ (reusable utilities)
-  ├── logs/ (application log files)
+cmd/
+  └── api/
+      └── main.go (entry point)
+config/ (configuration management)
+docs/ (Swagger/OpenAPI documentation - auto-generated)
+internal/ (core application logic)
+  ├── dto/ (Data Transfer Objects - API contracts)
+  ├── handlers/ (HTTP request handlers)
+  ├── services/ (business logic layer)
+  ├── models/ (domain models - database entities)
+  ├── middleware/ (request interceptors)
+  ├── database/ (DB initialization & migrations)
+  ├── routes/ (route definitions)
+  ├── testutil/ (testing utilities & fixtures)
+  └── utils/ (internal utilities - logging, etc.)
+pkg/ (reusable utilities)
+logs/ (application log files)
   └── migrations/ (SQL migration files)
 ```
 
@@ -278,8 +280,8 @@ The project uses a **dual-migration system**:
 
 Run migrations via:
 ```bash
-go run main.go -migrate        # AutoMigrate (dev)
-go run main.go -migrate=sql    # SQL migrations (prod)
+go run cmd/api/main.go -migrate        # AutoMigrate (dev)
+go run cmd/api/main.go -migrate=sql    # SQL migrations (prod)
 ```
 
 Migrations track applied status in `schema_migrations` table.
@@ -376,8 +378,8 @@ make docker-up               # Build production image, run compiled binary
 
 | File | Purpose |
 |------|---------|
-| `main.go` | Entry point; sets up logger, middleware, routes, migrations, Swagger |
-| `embed.go` | Embeds migration files into binary |
+| `cmd/api/main.go` | Entry point; sets up logger, middleware, routes, migrations, Swagger |
+| `embed.go` | Embeds migration files into binary (remains at project root) |
 | `config/config.go` | Load and validate environment configuration |
 | `config/database.go` | GORM connection setup based on driver |
 | **DTO Layer (NEW)** | |

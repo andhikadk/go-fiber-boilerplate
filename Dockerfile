@@ -19,10 +19,10 @@ COPY . .
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 
 # Generate Swagger documentation
-RUN swag init
+RUN swag init -g cmd/api/main.go
 
 # Build application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app ./cmd/api
 
 # Final stage
 FROM alpine:latest
