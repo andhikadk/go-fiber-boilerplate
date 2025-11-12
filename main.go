@@ -14,11 +14,11 @@ import (
 	_ "go-fiber-boilerplate/docs" // Import generated docs
 
 	"github.com/gofiber/fiber/v2"
-	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
-	"github.com/gofiber/fiber/v2/middleware/compress"
+	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"gorm.io/gorm"
 )
 
@@ -31,7 +31,7 @@ import (
 //	@contact.email				support@example.com
 //	@license.name				MIT
 //	@license.url				https://opensource.org/licenses/MIT
-//	@host						localhost:3000
+//	@host						localhost:4000
 //	@BasePath					/
 //	@schemes					http https
 //	@securityDefinitions.apikey	BearerAuth
@@ -41,7 +41,7 @@ import (
 
 func main() {
 	// Parse command line flags
-	migrateCmd := flag.String("migrate", "", "Run migrations (use: -migrate or -migrate sql)")
+	migrateCmd := flag.String("migrate", "", "Run migrations (use: -migrate=auto or -migrate=sql)")
 	seedCmd := flag.Bool("seed", false, "Seed database with sample data")
 	statusCmd := flag.Bool("status", false, "Show migration status")
 	flag.Parse()
@@ -66,12 +66,18 @@ func main() {
 
 	// Handle migration commands
 	if *migrateCmd != "" {
-		if *migrateCmd == "sql" || *migrateCmd == "true" {
+		if *migrateCmd == "sql" {
 			log.Println("Running SQL migrations from embedded files...")
 			if err := database.MigrateFromFS(db, MigrationsFS); err != nil {
 				log.Fatalf("Migration failed: %v", err)
 			}
+		} else {
+			// Default to AutoMigrate for development
+			if err := database.Migrate(db, cfg); err != nil {
+				log.Fatalf("Migration failed: %v", err)
+			}
 		}
+		log.Println("Migrations completed successfully")
 		return
 	}
 
@@ -136,12 +142,12 @@ func showMigrationStatus(db *gorm.DB) {
 
 	seeder := database.NewSeeder(db)
 	seeds, err := seeder.GetAppliedSeeds()
-	if err != nil {
-		log.Fatalf("Failed to get seed status: %v", err)
-	}
 
 	fmt.Println("\nApplied seeds:")
-	if len(seeds) == 0 {
+	if err != nil {
+		// Table doesn't exist yet, no seeds applied
+		fmt.Println("  No seeds applied yet")
+	} else if len(seeds) == 0 {
 		fmt.Println("  No seeds applied yet")
 	} else {
 		for _, s := range seeds {

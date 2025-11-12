@@ -15,6 +15,12 @@ RUN go mod download
 # Copy source code
 COPY . .
 
+# Install swag CLI for generating Swagger docs
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
+# Generate Swagger documentation
+RUN swag init
+
 # Build application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app .
 
@@ -32,6 +38,6 @@ COPY --from=builder /build/app .
 # Copy .env file (in production, use docker secrets instead)
 COPY .env.example .env
 
-EXPOSE 3000
+EXPOSE 4000
 
 CMD ["./app"]

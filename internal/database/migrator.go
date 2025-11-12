@@ -4,7 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"log"
-	"path/filepath"
+	"path"
 	"sort"
 	"strings"
 
@@ -61,7 +61,7 @@ func (m *Migrator) RunMigrationsFromFS(files embed.FS) error {
 		}
 
 		// Read migration file
-		content, err := files.ReadFile(filepath.Join("migrations", entry.Name()))
+		content, err := files.ReadFile(path.Join("migrations", entry.Name()))
 		if err != nil {
 			return fmt.Errorf("failed to read migration file %s: %w", entry.Name(), err)
 		}

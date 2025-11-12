@@ -18,10 +18,10 @@ import (
 //	@Tags			Authentication
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		dto.RegisterRequest		true	"Registration request"
-//	@Success		201		{object}	models.APIResponse		"User registered successfully"
-//	@Failure		400		{object}	models.APIResponse		"Invalid request or validation error"
-//	@Failure		409		{object}	models.APIResponse		"Email already registered"
+//	@Param			request	body		dto.RegisterRequest	true	"Registration request"
+//	@Success		201		{object}	models.APIResponse	"User registered successfully"
+//	@Failure		400		{object}	models.APIResponse	"Invalid request or validation error"
+//	@Failure		409		{object}	models.APIResponse	"Email already registered"
 //	@Router			/auth/register [post]
 func Register(c *fiber.Ctx) error {
 	var req dto.RegisterRequest
@@ -57,10 +57,10 @@ func Register(c *fiber.Ctx) error {
 //	@Tags			Authentication
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		dto.LoginRequest		true	"Login credentials"
+//	@Param			request	body		dto.LoginRequest							true	"Login credentials"
 //	@Success		200		{object}	models.APIResponse{data=dto.LoginResponse}	"Login successful"
-//	@Failure		400		{object}	models.APIResponse		"Invalid request or validation error"
-//	@Failure		401		{object}	models.APIResponse		"Invalid credentials or inactive account"
+//	@Failure		400		{object}	models.APIResponse							"Invalid request or validation error"
+//	@Failure		401		{object}	models.APIResponse							"Invalid credentials or inactive account"
 //	@Router			/auth/login [post]
 func Login(c *fiber.Ctx) error {
 	var req dto.LoginRequest
@@ -96,10 +96,10 @@ func Login(c *fiber.Ctx) error {
 //	@Tags			Authentication
 //	@Accept			json
 //	@Produce		json
-//	@Param			request	body		dto.RefreshTokenRequest		true	"Refresh token"
+//	@Param			request	body		dto.RefreshTokenRequest								true	"Refresh token"
 //	@Success		200		{object}	models.APIResponse{data=dto.RefreshTokenResponse}	"Token refreshed successfully"
-//	@Failure		400		{object}	models.APIResponse		"Invalid request body"
-//	@Failure		401		{object}	models.APIResponse		"Invalid or expired refresh token"
+//	@Failure		400		{object}	models.APIResponse									"Invalid request body"
+//	@Failure		401		{object}	models.APIResponse									"Invalid or expired refresh token"
 //	@Router			/auth/refresh [post]
 func RefreshToken(c *fiber.Ctx) error {
 	var req dto.RefreshTokenRequest
@@ -139,8 +139,8 @@ func RefreshToken(c *fiber.Ctx) error {
 //	@Produce		json
 //	@Security		BearerAuth
 //	@Success		200	{object}	models.APIResponse{data=dto.UserResponse}	"Profile retrieved successfully"
-//	@Failure		401	{object}	models.APIResponse						"Unauthorized or invalid token"
-//	@Failure		404	{object}	models.APIResponse						"User not found"
+//	@Failure		401	{object}	models.APIResponse							"Unauthorized or invalid token"
+//	@Failure		404	{object}	models.APIResponse							"User not found"
 //	@Router			/user/profile [get]
 func GetProfile(c *fiber.Ctx) error {
 	// Get user ID from context (set by auth middleware)
@@ -170,11 +170,11 @@ func GetProfile(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			request	body		dto.UpdateProfileRequest	true	"Profile update data"
+//	@Param			request	body		dto.UpdateProfileRequest					true	"Profile update data"
 //	@Success		200		{object}	models.APIResponse{data=dto.UserResponse}	"Profile updated successfully"
-//	@Failure		400		{object}	models.APIResponse		"Invalid request or validation error"
-//	@Failure		401		{object}	models.APIResponse		"Unauthorized or invalid token"
-//	@Failure		500		{object}	models.APIResponse		"Failed to update profile"
+//	@Failure		400		{object}	models.APIResponse							"Invalid request or validation error"
+//	@Failure		401		{object}	models.APIResponse							"Unauthorized or invalid token"
+//	@Failure		500		{object}	models.APIResponse							"Failed to update profile"
 //	@Router			/user/profile [put]
 func UpdateProfile(c *fiber.Ctx) error {
 	// Get user ID from context

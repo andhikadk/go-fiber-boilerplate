@@ -1,9 +1,18 @@
-.PHONY: help build run test clean migrate seed docker-up docker-down docker-logs docker-reset docker-dev docker-dev-logs docker-dev-down docker-dev-reset install-deps
+.PHONY: help build run test clean migrate seed docker-up docker-down docker-logs docker-reset docker-dev docker-dev-logs docker-dev-down docker-dev-reset install-deps swagger swagger-install
 
 # Variables
 APP_NAME=go-fiber-boilerplate
 MAIN_PATH=main.go
-BINARY_NAME=./bin/$(APP_NAME)
+
+# Detect OS for binary extension
+ifeq ($(OS),Windows_NT)
+	BIN_EXT=.exe
+else
+	BIN_EXT=
+endif
+
+BINARY_NAME=./bin/$(APP_NAME)$(BIN_EXT)
+AIR_BIN=./bin/app$(BIN_EXT)
 
 help: ## Display this help screen
 	@echo "Available commands:"
@@ -14,18 +23,18 @@ install-deps: ## Install Go dependencies
 	@go mod download
 	@go mod tidy
 
-build: ## Build the application
+build: swagger ## Build the application (generates Swagger docs first)
 	@echo "Building $(APP_NAME)..."
-	@go build -o $(BINARY_NAME) $(MAIN_PATH)
+	@go build -o $(BINARY_NAME) .
 	@echo "Build complete: $(BINARY_NAME)"
 
 run: ## Run the application
 	@echo "Running $(APP_NAME)..."
-	@go run $(MAIN_PATH)
+	@go run .
 
 dev: ## Run in development mode with hot reload (requires air)
 	@echo "Running in development mode..."
-	@air || echo "air not installed. Install with: go install github.com/cosmtrek/air@latest"
+	@air --build.bin "$(AIR_BIN)" --build.cmd "go build -o $(AIR_BIN) ." || echo "air not installed. Install with: go install github.com/cosmtrek/air@latest"
 
 test: ## Run unit tests
 	@echo "Running tests..."
@@ -56,21 +65,35 @@ vet: ## Run go vet
 	@echo "Running go vet..."
 	@go vet ./...
 
-migrate: ## Run database migrations (AutoMigrate for dev, SQL for prod)
+swagger-install: ## Install swag CLI tool for generating Swagger documentation
+	@echo "Installing swag CLI..."
+	@go install github.com/swaggo/swag/cmd/swag@latest
+	@echo "swag installed successfully"
+
+swagger: ## Generate Swagger documentation
+	@echo "Generating Swagger documentation..."
+	@swag init
+	@echo "Swagger documentation generated in ./docs"
+
+swagger-fmt: ## Format Swagger comments
+	@echo "Formatting Swagger comments..."
+	@swag fmt
+
+migrate: ## Run database migrations (AutoMigrate for dev)
 	@echo "Running migrations..."
-	@go run $(MAIN_PATH) -migrate
+	@go run . -migrate=auto
 
 migrate-sql: ## Run SQL migrations from files
 	@echo "Running SQL migrations..."
-	@go run $(MAIN_PATH) -migrate=sql
+	@go run . -migrate=sql
 
 migrate-status: ## Show migration status
 	@echo "Migration status..."
-	@go run $(MAIN_PATH) -status
+	@go run . -status
 
 seed: ## Seed database with sample data
 	@echo "Seeding database..."
-	@go run $(MAIN_PATH) -seed
+	@go run . -seed
 
 docker-build: ## Build Docker image
 	@echo "Building Docker image..."

@@ -52,7 +52,7 @@ func LoadConfig() (*Config, error) {
 
 	config := &Config{
 		// Server
-		Port:         getEnv("PORT", "3000"),
+		Port:         getEnv("PORT", "4000"),
 		Env:          getEnv("ENV", "development"),
 		AppName:      getEnv("APP_NAME", "Fiber Boilerplate API"),
 		ReadTimeout:  parseDuration(getEnv("READ_TIMEOUT", "10s")),
@@ -74,7 +74,7 @@ func LoadConfig() (*Config, error) {
 		JWTRefreshExpiry: parseDuration(getEnv("JWT_REFRESH_EXPIRY", "7d")),
 
 		// CORS
-		CORSAllowedOrigins: getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000"),
+		CORSAllowedOrigins: getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:4000"),
 		CORSAllowedMethods: getEnv("CORS_ALLOWED_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
 		CORSAllowedHeaders: getEnv("CORS_ALLOWED_HEADERS", "Content-Type,Authorization"),
 

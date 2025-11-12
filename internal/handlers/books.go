@@ -20,11 +20,11 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			page	query		int	false	"Page number (default: 1)"
-//	@Param			limit	query		int	false	"Items per page (default: 10, max: 100)"
+//	@Param			page	query		int												false	"Page number (default: 1)"
+//	@Param			limit	query		int												false	"Items per page (default: 10, max: 100)"
 //	@Success		200		{object}	models.PaginatedResponse{data=[]models.Book}	"Books retrieved successfully"
-//	@Failure		401		{object}	models.APIResponse							"Unauthorized"
-//	@Failure		500		{object}	models.APIResponse							"Failed to fetch books"
+//	@Failure		401		{object}	models.APIResponse								"Unauthorized"
+//	@Failure		500		{object}	models.APIResponse								"Failed to fetch books"
 //	@Router			/api/books [get]
 func GetBooks(c *fiber.Ctx) error {
 	// Get pagination params
@@ -58,7 +58,7 @@ func GetBooks(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			id	path		int	true	"Book ID"
+//	@Param			id	path		int										true	"Book ID"
 //	@Success		200	{object}	models.APIResponse{data=models.Book}	"Book retrieved successfully"
 //	@Failure		400	{object}	models.APIResponse						"Invalid book ID"
 //	@Failure		401	{object}	models.APIResponse						"Unauthorized"
@@ -90,11 +90,11 @@ func GetBook(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			request	body		dto.CreateBookRequest		true	"Book creation data"
+//	@Param			request	body		dto.CreateBookRequest					true	"Book creation data"
 //	@Success		201		{object}	models.APIResponse{data=models.Book}	"Book created successfully"
-//	@Failure		400		{object}	models.APIResponse			"Invalid request or validation error"
-//	@Failure		401		{object}	models.APIResponse			"Unauthorized"
-//	@Failure		500		{object}	models.APIResponse			"Failed to create book"
+//	@Failure		400		{object}	models.APIResponse						"Invalid request or validation error"
+//	@Failure		401		{object}	models.APIResponse						"Unauthorized"
+//	@Failure		500		{object}	models.APIResponse						"Failed to create book"
 //	@Router			/api/books [post]
 func CreateBook(c *fiber.Ctx) error {
 	var req dto.CreateBookRequest
@@ -131,12 +131,12 @@ func CreateBook(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			id		path		int						true	"Book ID"
-//	@Param			request	body		dto.UpdateBookRequest	true	"Book update data"
+//	@Param			id		path		int										true	"Book ID"
+//	@Param			request	body		dto.UpdateBookRequest					true	"Book update data"
 //	@Success		200		{object}	models.APIResponse{data=models.Book}	"Book updated successfully"
-//	@Failure		400		{object}	models.APIResponse		"Invalid request or validation error"
-//	@Failure		401		{object}	models.APIResponse		"Unauthorized"
-//	@Failure		404		{object}	models.APIResponse		"Book not found"
+//	@Failure		400		{object}	models.APIResponse						"Invalid request or validation error"
+//	@Failure		401		{object}	models.APIResponse						"Unauthorized"
+//	@Failure		404		{object}	models.APIResponse						"Book not found"
 //	@Router			/api/books/{id} [put]
 func UpdateBook(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
@@ -179,7 +179,7 @@ func UpdateBook(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			id	path		int	true	"Book ID"
+//	@Param			id	path		int					true	"Book ID"
 //	@Success		200	{object}	models.APIResponse	"Book deleted successfully"
 //	@Failure		400	{object}	models.APIResponse	"Invalid book ID"
 //	@Failure		401	{object}	models.APIResponse	"Unauthorized"
@@ -211,7 +211,7 @@ func DeleteBook(c *fiber.Ctx) error {
 //	@Accept			json
 //	@Produce		json
 //	@Security		BearerAuth
-//	@Param			q	query		string	true	"Search query"
+//	@Param			q	query		string									true	"Search query"
 //	@Success		200	{object}	models.APIResponse{data=[]models.Book}	"Search results"
 //	@Failure		400	{object}	models.APIResponse						"Search query is required"
 //	@Failure		401	{object}	models.APIResponse						"Unauthorized"

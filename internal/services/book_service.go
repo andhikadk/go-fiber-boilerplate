@@ -55,10 +55,10 @@ func (s *BookService) GetBookByID(id uint) (*models.Book, error) {
 // CreateBook creates a new book
 func (s *BookService) CreateBook(req *dto.CreateBookRequest) (*models.Book, error) {
 	book := &models.Book{
-		Title:       req.Title,
-		Author:      req.Author,
-		Year:        req.Year,
-		ISBN:        req.ISBN,
+		Title:  req.Title,
+		Author: req.Author,
+		Year:   req.Year,
+		ISBN:   req.ISBN,
 	}
 
 	if err := s.db.Create(book).Error; err != nil {

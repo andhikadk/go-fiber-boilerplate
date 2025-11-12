@@ -18,7 +18,7 @@ func AssertEqual(t *testing.T, expected, actual interface{}, msgAndArgs ...inter
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v\n%s", msgAndArgs[0], message)
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -30,7 +30,7 @@ func AssertNotEqual(t *testing.T, expected, actual interface{}, msgAndArgs ...in
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v\n%s", msgAndArgs[0], message)
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -42,7 +42,7 @@ func AssertNil(t *testing.T, value interface{}, msgAndArgs ...interface{}) {
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v\n%s", msgAndArgs[0], message)
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -54,7 +54,7 @@ func AssertNotNil(t *testing.T, value interface{}, msgAndArgs ...interface{}) {
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v", msgAndArgs[0])
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -66,7 +66,7 @@ func AssertTrue(t *testing.T, condition bool, msgAndArgs ...interface{}) {
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v", msgAndArgs[0])
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -78,7 +78,7 @@ func AssertFalse(t *testing.T, condition bool, msgAndArgs ...interface{}) {
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v", msgAndArgs[0])
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -90,7 +90,7 @@ func AssertStatusCode(t *testing.T, expected int, resp *http.Response, msgAndArg
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v\n%s", msgAndArgs[0], message)
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -103,7 +103,7 @@ func AssertLen(t *testing.T, value interface{}, expectedLen int, msgAndArgs ...i
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v\n%s", msgAndArgs[0], message)
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -115,7 +115,7 @@ func AssertContains(t *testing.T, haystack, needle string, msgAndArgs ...interfa
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v\n%s", msgAndArgs[0], message)
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -127,7 +127,7 @@ func AssertNotContains(t *testing.T, haystack, needle string, msgAndArgs ...inte
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v\n%s", msgAndArgs[0], message)
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -139,7 +139,7 @@ func AssertNoError(t *testing.T, err error, msgAndArgs ...interface{}) {
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v\n%s", msgAndArgs[0], message)
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 
@@ -151,7 +151,7 @@ func AssertError(t *testing.T, err error, msgAndArgs ...interface{}) {
 		if len(msgAndArgs) > 0 {
 			message = fmt.Sprintf("%v", msgAndArgs[0])
 		}
-		t.Errorf(message)
+		t.Error(message)
 	}
 }
 

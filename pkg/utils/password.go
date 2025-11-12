@@ -20,8 +20,5 @@ func VerifyPassword(password, hash string) error {
 
 // IsPasswordValid validates password strength
 func IsPasswordValid(password string) bool {
-	if len(password) < 6 {
-		return false
-	}
-	return true
+	return len(password) >= 6
 }

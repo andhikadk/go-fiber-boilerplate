@@ -4,10 +4,11 @@ import (
 	"embed"
 	"fmt"
 	"log"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // Seeder handles database seeding
@@ -69,7 +70,7 @@ func (s *Seeder) executeSeed(files embed.FS, seedFile string) error {
 	log.Printf("Running seed: %s", seedFile)
 
 	// Read seed file
-	content, err := files.ReadFile(filepath.Join("migrations/seeds", seedFile))
+	content, err := files.ReadFile(path.Join("migrations/seeds", seedFile))
 	if err != nil {
 		return fmt.Errorf("failed to read seed file %s: %w", seedFile, err)
 	}
@@ -124,7 +125,9 @@ func (s *Seeder) ClearSeeds() error {
 // GetAppliedSeeds returns all applied seeds
 func (s *Seeder) GetAppliedSeeds() ([]string, error) {
 	var seeds []string
-	err := s.db.Table("seed_versions").
+	// Use Silent logger to suppress "table does not exist" error logs
+	err := s.db.Session(&gorm.Session{Logger: logger.Default.LogMode(logger.Silent)}).
+		Table("seed_versions").
 		Order("applied_at ASC").
 		Pluck("seed_name", &seeds).Error
 	return seeds, err

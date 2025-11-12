@@ -52,6 +52,16 @@ make docker-logs       # View logs
 make docker-reset      # Reset containers and database
 ```
 
+### Swagger Documentation
+```bash
+make swagger-install   # Install swag CLI tool
+make swagger           # Generate Swagger documentation
+make swagger-fmt       # Format Swagger comments
+```
+
+After running the application, access interactive API documentation at:
+- Swagger UI: `http://localhost:4000/swagger/index.html`
+
 ### Utilities
 ```bash
 make install-deps      # Download and tidy dependencies
@@ -69,42 +79,81 @@ The application follows a **layered architecture** with clear separation of conc
 ```
 main.go (entry point)
   ├── config/ (configuration management)
+  ├── docs/ (Swagger/OpenAPI documentation - auto-generated)
   ├── internal/ (core application logic)
+  │   ├── dto/ (Data Transfer Objects - API contracts)
   │   ├── handlers/ (HTTP request handlers)
   │   ├── services/ (business logic layer)
-  │   ├── models/ (data structures)
+  │   ├── models/ (domain models - database entities)
   │   ├── middleware/ (request interceptors)
   │   ├── database/ (DB initialization & migrations)
-  │   └── routes/ (route definitions)
+  │   ├── routes/ (route definitions)
+  │   ├── testutil/ (testing utilities & fixtures)
+  │   └── utils/ (internal utilities - logging, etc.)
   ├── pkg/ (reusable utilities)
-  └── migrations/ (SQL files)
+  ├── logs/ (application log files)
+  └── migrations/ (SQL migration files)
 ```
 
 ### Key Architectural Patterns
 
-#### 1. **Handlers (HTTP Layer)**
+#### 1. **DTO Layer (Data Transfer Objects)** ⭐ NEW
+- Located in `internal/dto/`
+- Separate API contracts from domain models
+- Each DTO has a `Validate()` method for self-validation
+- Examples: `dto.RegisterRequest`, `dto.CreateBookRequest`, `dto.LoginResponse`
+- Benefits: Clean separation, explicit validation, better testability
+
+Example:
+```go
+type RegisterRequest struct {
+    Name     string `json:"name" example:"John Doe"`
+    Email    string `json:"email" example:"john@example.com"`
+    Password string `json:"password" example:"password123"`
+}
+
+func (r *RegisterRequest) Validate() error {
+    if strings.TrimSpace(r.Name) == "" {
+        return errors.New("name is required")
+    }
+    // ... more validations
+    return nil
+}
+```
+
+#### 2. **Handlers (HTTP Layer)**
 - Located in `internal/handlers/`
-- Convert HTTP requests to domain operations
+- Convert HTTP requests to DTOs and call services
 - Use `fiber.Ctx` for request/response handling
-- Call services for business logic
+- Self-validate DTOs using `req.Validate()`
+- Log operations with structured logging (`utils.InfoLogger`, `utils.ErrorLogger`)
 - Return standardized responses via utility functions
+- Include Swagger annotations for API documentation
 
-Example flow: `Register` handler → calls `AuthService.Register()` → returns JSON via `utils.CreatedResponse()`
+Example flow: `Register` handler → parses to `dto.RegisterRequest` → validates → calls `AuthService.Register()` → returns JSON
 
-#### 2. **Services (Business Logic Layer)**
+#### 3. **Services (Business Logic Layer)**
 - Located in `internal/services/`
-- Contain all business logic and validation
-- Access database through GORM
-- Services are instantiated fresh per request (e.g., `NewAuthService()`)
-- Services hold a reference to the database: `type AuthService struct { db *gorm.DB }`
+- Contain all business logic
+- Accept DTOs as input, return domain models
+- Use **explicit dependency injection**: `NewAuthService(db *gorm.DB)`
+- Access database through injected GORM instance
+- Services are stateless and created per request
 
-#### 3. **Models (Domain & Request/Response)**
+Example:
+```go
+authService := services.NewAuthService(database.GetDB())
+user, err := authService.Register(&req) // req is dto.RegisterRequest
+```
+
+#### 4. **Models (Domain Models)**
 - Located in `internal/models/`
-- Include both ORM models (e.g., `User`, `Book`) and DTOs (request/response structs)
-- ORM models have GORM tags for database mapping
-- Response models (e.g., `LoginResponse`) define API contract
+- Pure domain entities representing database tables
+- GORM tags for database mapping
+- No request/response structs (moved to DTO layer)
+- Examples: `User`, `Book`, `APIResponse`
 
-#### 4. **Middleware Chain**
+#### 5. **Middleware Chain**
 - Located in `internal/middleware/`
 - Auth middleware extracts and validates JWT tokens
 - Error handling middleware catches panics and formats errors
@@ -131,15 +180,94 @@ Example flow: `Register` handler → calls `AuthService.Register()` → returns 
 - Claims include `UserID`, `Email`, `Role`
 - Auth middleware validates token and extracts user info into context
 
-### Request/Response Flow
+#### 8. **Testing Infrastructure** ⭐ NEW
+- Located in `internal/testutil/`
+- `db.go`: In-memory SQLite database setup for tests
+- `fixtures.go`: Reusable test data creation functions
+- `assert.go`: Custom assertion helpers
+
+Example usage:
+```go
+func TestCreateBook(t *testing.T) {
+    db := testutil.SetupTestDB(t)
+    defer testutil.CleanupTestDB(db)
+
+    book := testutil.CreateBookFixture(db, "Test Book", "Author", "ISBN123", 2024)
+    testutil.AssertEqual(t, "Test Book", book.Title)
+}
+```
+
+Available utilities:
+- `SetupTestDB(t)` - Create in-memory test database
+- `CreateUserFixture()`, `CreateBookFixture()` - Generate test data
+- `AssertEqual()`, `AssertStatusCode()`, `ParseJSONResponse()` - Test assertions
+
+#### 9. **Structured Logging** ⭐ NEW
+- Located in `internal/utils/logger.go`
+- Two loggers: `InfoLogger` (general operations) and `ErrorLogger` (errors)
+- Logs written to both file (`logs/app.log`) and console
+- Format: `[LEVEL] timestamp [HandlerName] Message: details`
+
+Example usage in handlers:
+```go
+utils.InfoLogger.Printf("[Register] User registered successfully: %s (ID: %d)", user.Email, user.ID)
+utils.ErrorLogger.Printf("[Register] Validation failed: %v", err)
+```
+
+#### 10. **Swagger/OpenAPI Documentation** ⭐ NEW
+- Auto-generated from code annotations
+- Located in `docs/` directory (swagger.json, swagger.yaml)
+- Access interactive UI at `/swagger/index.html`
+- Annotations on handlers define endpoints, parameters, responses
+
+Example annotation:
+```go
+// Register godoc
+//  @Summary      Register a new user
+//  @Description  Register a new user with name, email, and password
+//  @Tags         Authentication
+//  @Accept       json
+//  @Produce      json
+//  @Param        request body dto.RegisterRequest true "Registration request"
+//  @Success      201 {object} models.APIResponse "User registered successfully"
+//  @Router       /auth/register [post]
+func Register(c *fiber.Ctx) error { ... }
+```
+
+### Request/Response Flow (Updated with DTO Layer)
 
 1. **Request arrives** → Fiber routes to handler in `internal/handlers/`
-2. **Handler parses** request body into DTO (e.g., `RegisterRequest`)
-3. **Handler validates** input and calls service method
-4. **Service executes** business logic: database queries, validations, token generation
-5. **Service returns** domain objects or errors
-6. **Handler formats** response using utility functions (`utils.SuccessResponse()`, `utils.CreatedResponse()`, etc.)
-7. **Response sent** as JSON with standardized structure
+2. **Handler parses** request body into DTO (e.g., `dto.RegisterRequest`)
+3. **Handler validates** DTO using `req.Validate()` method
+4. **Handler logs** operation start with `utils.InfoLogger`
+5. **Handler creates** service with explicit DI: `services.NewAuthService(database.GetDB())`
+6. **Handler calls** service method, passing DTO
+7. **Service executes** business logic: database queries, validations, token generation
+8. **Service returns** domain objects (models.User) or errors
+9. **Handler logs** operation result (success with InfoLogger, error with ErrorLogger)
+10. **Handler formats** response using utility functions (`utils.SuccessResponse()`, `utils.CreatedResponse()`, etc.)
+11. **Response sent** as JSON with standardized structure
+
+**Example Complete Flow:**
+```go
+// 1. Parse request to DTO
+var req dto.RegisterRequest
+c.BodyParser(&req)
+
+// 2. Validate DTO
+if err := req.Validate(); err != nil {
+    utils.ErrorLogger.Printf("[Register] Validation failed: %v", err)
+    return utils.BadRequestResponse(c, err.Error())
+}
+
+// 3. Call service with DI
+authService := services.NewAuthService(database.GetDB())
+user, err := authService.Register(&req)
+
+// 4. Log and respond
+utils.InfoLogger.Printf("[Register] User registered: %s (ID: %d)", user.Email, user.ID)
+return utils.CreatedResponse(c, "User registered successfully", user.GetPublicUser())
+```
 
 ### Database Migrations
 
@@ -168,27 +296,42 @@ Migrations track applied status in `schema_migrations` table.
 
 ### Adding a New Entity (e.g., "Product")
 
-1. **Create Model** in `internal/models/product.go`
-   - Define GORM model struct with tags
+1. **Create DTOs** in `internal/dto/product_dto.go`
+   - Define request DTOs: `CreateProductRequest`, `UpdateProductRequest`
+   - Define response DTOs: `ProductResponse` (optional)
+   - Add `Validate()` method to each request DTO
+   - Include Swagger example tags (`example:"..."`)
+
+2. **Create Model** in `internal/models/product.go`
+   - Define GORM model struct with tags (domain entity)
    - Optionally add helper methods (e.g., `GetPublicProduct()`)
 
-2. **Create Service** in `internal/services/product_service.go`
+3. **Create Service** in `internal/services/product_service.go`
    - Implement business logic (CRUD operations)
-   - Service receives database via `database.GetDB()`
+   - Accept DTOs as parameters, return models
+   - Use explicit DI: `NewProductService(db *gorm.DB)`
 
-3. **Create Handler** in `internal/handlers/product.go`
-   - Implement HTTP endpoints
-   - Parse requests, call service, format responses
+4. **Create Handler** in `internal/handlers/product.go`
+   - Implement HTTP endpoints with Swagger annotations
+   - Parse requests to DTOs, validate with `req.Validate()`
+   - Add structured logging (`utils.InfoLogger`, `utils.ErrorLogger`)
+   - Call service with: `services.NewProductService(database.GetDB())`
+   - Format responses using utility functions
 
-4. **Add Routes** in `internal/routes/routes.go`
+5. **Add Routes** in `internal/routes/routes.go`
    - Define new route groups (e.g., `/api/products`)
    - Add auth middleware if needed
 
-5. **Create Migration** in `migrations/` (optional for SQL migrations)
+6. **Generate Swagger** docs
+   - Run `make swagger` to update API documentation
+
+7. **Create Migration** in `migrations/` (optional for SQL migrations)
    - Or rely on `AutoMigrate` in development
 
-6. **Write Tests** in `tests/` directory
-   - Test service logic and handlers
+8. **Write Tests** in `internal/handlers/product_test.go` (co-located)
+   - Use `testutil.SetupTestDB()` for test database
+   - Use `testutil.CreateProductFixture()` for test data
+   - Use `testutil.AssertEqual()` and other assertion helpers
 
 ### Modifying Existing Features
 
@@ -233,46 +376,71 @@ make docker-up               # Build production image, run compiled binary
 
 | File | Purpose |
 |------|---------|
-| `main.go` | Entry point; sets up middleware, routes, migrations |
+| `main.go` | Entry point; sets up logger, middleware, routes, migrations, Swagger |
 | `embed.go` | Embeds migration files into binary |
 | `config/config.go` | Load and validate environment configuration |
 | `config/database.go` | GORM connection setup based on driver |
-| `internal/routes/routes.go` | Route definitions and grouping |
+| **DTO Layer (NEW)** | |
+| `internal/dto/auth_dto.go` | Authentication DTOs with self-validation (Register, Login, Refresh) |
+| `internal/dto/user_dto.go` | User operation DTOs (UpdateProfile, ChangePassword) |
+| `internal/dto/book_dto.go` | Book operation DTOs (Create, Update) |
+| **Handlers** | |
+| `internal/handlers/auth.go` | Auth endpoints with DTOs, logging, Swagger annotations |
+| `internal/handlers/books.go` | Book endpoints with DTOs, logging, Swagger annotations |
+| **Services** | |
+| `internal/services/auth_service.go` | Auth business logic with explicit DI |
+| `internal/services/book_service.go` | Book business logic with explicit DI |
+| **Infrastructure** | |
+| `internal/routes/routes.go` | Route definitions, Swagger endpoint |
 | `internal/middleware/auth.go` | JWT validation and user context extraction |
 | `internal/middleware/error.go` | Global error handling |
+| `internal/utils/logger.go` | Structured logging (InfoLogger, ErrorLogger) |
+| **Testing (NEW)** | |
+| `internal/testutil/db.go` | Test database setup utilities |
+| `internal/testutil/fixtures.go` | Test data creation functions |
+| `internal/testutil/assert.go` | Custom test assertion helpers |
+| **Utilities** | |
 | `pkg/jwt/manager.go` | JWT token creation and validation |
 | `pkg/utils/responses.go` | Standard response formatting |
+| **Documentation (NEW)** | |
+| `docs/swagger.json` | OpenAPI spec (auto-generated) |
+| `docs/docs.go` | Embedded Swagger documentation |
+| **Configuration** | |
 | `.env.example` | Template for environment variables |
 | `.air.toml` | Hot reload configuration |
 
 ## Key Dependencies
 
-- **Fiber v2**: Web framework
+- **Fiber v2**: Web framework (Express.js-like for Go)
 - **GORM**: ORM for database operations
 - **golang-jwt**: JWT token handling
 - **bcrypt**: Password hashing
-- **validator/v10**: Input validation
 - **godotenv**: .env file loading
+- **swaggo/swag**: Swagger documentation generation ⭐ NEW
+- **gofiber/swagger**: Swagger UI middleware for Fiber ⭐ NEW
 
 ## Code Organization Principles
 
 1. **Single Responsibility**: Each file/function has one reason to change
-2. **Dependency Injection**: Services receive database, don't create it
-3. **Error Handling**: Return errors explicitly, use middleware for global handling
-4. **Validation**: Validate input early in handlers; return 400 for bad requests
-5. **No Sensitive Data in Logs**: Password hashes are excluded from JSON response
-6. **Standard Response Format**: All endpoints return consistent JSON structure
+2. **DTO Layer Separation**: API contracts (DTOs) separated from domain models
+3. **Self-Validating DTOs**: DTOs contain their own validation logic
+4. **Dependency Injection**: Services receive database explicitly, don't create it
+5. **Error Handling**: Return errors explicitly, use middleware for global handling
+6. **Structured Logging**: Consistent logging format with context (`[HandlerName] Message`)
+7. **API Documentation**: Swagger annotations on all public endpoints
+8. **Validation**: Validate input early in handlers using DTO.Validate(); return 400 for bad requests
+9. **No Sensitive Data in Logs**: Password hashes are excluded from JSON response
+10. **Standard Response Format**: All endpoints return consistent JSON structure
 
 ## Concurrent Programming Patterns
 
-This boilerplate includes educational examples of common Go concurrency patterns in `internal/services/concurrent_service.go` and `internal/handlers/concurrent.go`.
+> **Note**: The concurrent programming patterns have been temporarily moved to separate documentation to keep the core boilerplate focused and clean. These educational examples demonstrate common Go concurrency patterns and will be available as optional examples or in separate documentation.
 
-### Available Patterns
+The patterns were previously available in `internal/services/concurrent_service.go` and `internal/handlers/concurrent.go`. If you need these examples, they can be found in the git history or will be documented separately.
 
-Access the overview endpoint to see all available patterns:
-```bash
-curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:3000/api/concurrent
-```
+### Patterns Included (For Reference)
+
+These patterns demonstrate real-world Go concurrency use cases:
 
 #### 1. **Basic Goroutines with WaitGroup**
 **Endpoint:** `GET /api/concurrent/parallel?ids=1,2,3`
@@ -401,7 +569,7 @@ To test these patterns:
 
 2. **Login to get JWT token:**
    ```bash
-   curl -X POST http://localhost:3000/auth/login \
+   curl -X POST http://localhost:4000/auth/login \
      -H "Content-Type: application/json" \
      -d '{"email":"admin@example.com","password":"admin123"}'
    ```
@@ -409,7 +577,7 @@ To test these patterns:
 3. **Test a pattern (example: worker pool):**
    ```bash
    curl -H "Authorization: Bearer YOUR_TOKEN" \
-     "http://localhost:3000/api/concurrent/worker-pool?ids=1,2,3,4,5&workers=3"
+     "http://localhost:4000/api/concurrent/worker-pool?ids=1,2,3,4,5&workers=3"
    ```
 
 ### Best Practices for Concurrent Code
