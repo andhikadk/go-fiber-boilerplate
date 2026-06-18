@@ -1,4 +1,4 @@
-.PHONY: help build run test clean migrate seed docker-up docker-down docker-logs docker-reset docker-dev docker-dev-logs docker-dev-down docker-dev-reset install-deps swagger swagger-install
+.PHONY: help build run test clean migrate migrate-fresh migrate-status seed docker-up docker-down docker-logs docker-reset docker-dev docker-dev-logs docker-dev-down docker-dev-reset install-deps swagger swagger-install swagger-fmt
 
 # Variables
 APP_NAME=go-fiber-boilerplate
@@ -79,17 +79,17 @@ swagger-fmt: ## Format Swagger comments
 	@echo "Formatting Swagger comments..."
 	@swag fmt
 
-migrate: ## Run database migrations (AutoMigrate for dev)
-	@echo "Running migrations..."
-	@go run ./cmd/api -migrate=auto
-
-migrate-sql: ## Run SQL migrations from files
+migrate: ## Run SQL migrations on pending changes
 	@echo "Running SQL migrations..."
-	@go run ./cmd/api -migrate=sql
+	@go run ./cmd/api -migrate=run
+
+migrate-fresh: ## Reset migrations and re-apply all (DEV ONLY)
+	@echo "Running migrate:fresh (reset + re-apply)..."
+	@go run ./cmd/api -migrate=fresh
 
 migrate-status: ## Show migration status
 	@echo "Migration status..."
-	@go run ./cmd/api -status
+	@go run ./cmd/api -migrate=status
 
 seed: ## Seed database with sample data
 	@echo "Seeding database..."

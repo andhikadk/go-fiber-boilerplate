@@ -1,37 +1,43 @@
--- Initial schema: Create users and books tables
--- Created at: 2024-10-25
-
--- Create users table
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255),
+    password_is_set_by_user BOOLEAN NOT NULL DEFAULT FALSE,
     role VARCHAR(50) DEFAULT 'user',
-    is_active BOOLEAN DEFAULT true,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL
+    deleted_at TIMESTAMP
 );
 
--- Create books table
-CREATE TABLE IF NOT EXISTS books (
+CREATE TABLE IF NOT EXISTS user_profiles (
     id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    author VARCHAR(255) NOT NULL,
-    isbn VARCHAR(20) NOT NULL,
-    year INTEGER,
-    pages INTEGER,
-    publisher VARCHAR(255),
+    user_id INTEGER NOT NULL UNIQUE,
+    first_name VARCHAR(120) NOT NULL,
+    last_name VARCHAR(120),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    token_hash VARCHAR(128) NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS resources (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
     description TEXT,
+    status VARCHAR(40) NOT NULL DEFAULT 'active',
+    created_by_id INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL
-);
-
--- Create migration_versions table to track migrations
-CREATE TABLE IF NOT EXISTS migration_versions (
-    id SERIAL PRIMARY KEY,
-    version VARCHAR(50) NOT NULL UNIQUE,
-    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    deleted_at TIMESTAMP,
+    FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE
 );

@@ -25,7 +25,9 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 	// Auto-migrate all models
 	err = db.AutoMigrate(
 		&models.User{},
-		&models.Book{},
+		&models.UserProfile{},
+		&models.PasswordReset{},
+		&models.Resource{},
 	)
 	if err != nil {
 		t.Fatalf("Failed to migrate test database: %v", err)

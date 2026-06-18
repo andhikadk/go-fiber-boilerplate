@@ -4,16 +4,18 @@ package models
 type APIResponse struct {
 	Status  int         `json:"status" example:"200"`
 	Message string      `json:"message" example:"Success"`
+	Code    string      `json:"code,omitempty" example:""`
 	Data    interface{} `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty" example:""`
 }
 
 // PaginatedResponse is the response wrapper for paginated data
 type PaginatedResponse struct {
-	Status  int         `json:"status" example:"200"`
-	Message string      `json:"message" example:"Success"`
-	Data    interface{} `json:"data"`
-	Page    int         `json:"page" example:"1"`
-	Limit   int         `json:"limit" example:"10"`
-	Total   int64       `json:"total" example:"100"`
+	Status     int         `json:"status" example:"200"`
+	Message    string      `json:"message" example:"Success"`
+	Data       interface{} `json:"data"`
+	Page       int         `json:"page" example:"1"`
+	Limit      int         `json:"limit" example:"10"`
+	Total      int64       `json:"total" example:"100"`
+	TotalPages int         `json:"total_pages" example:"10"`
 }

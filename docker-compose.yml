@@ -10,7 +10,6 @@ services:
       - "6543:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -30,6 +29,8 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       DB_NAME: fiber_boilerplate
+      DB_SSL_MODE: disable
+      JWT_SECRET: production-change-this-secret-at-least-32-characters
       PORT: 4000
       ENV: production
     ports:

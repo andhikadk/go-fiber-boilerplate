@@ -1,76 +1,91 @@
 package routes
 
 import (
+	"go-fiber-boilerplate/config"
+	"go-fiber-boilerplate/internal/cache"
+	"go-fiber-boilerplate/internal/database"
 	"go-fiber-boilerplate/internal/handlers"
 	"go-fiber-boilerplate/internal/middleware"
+	"go-fiber-boilerplate/internal/services"
+	"go-fiber-boilerplate/pkg/utils"
 
+	scalar "github.com/MarceloPetrucio/go-scalar-api-reference"
 	"github.com/gofiber/fiber/v2"
-	fiberSwagger "github.com/gofiber/swagger"
 )
 
-// SetupRoutes configures all application routes
-func SetupRoutes(app *fiber.App) {
-	// Health check routes (public)
+func SetupRoutes(app *fiber.App, _ *cache.Client) {
+	emailService := services.NewNoopEmailService()
+	if config.AppConfig.SMTPHost == "" {
+		utils.Log("Routes").Warn("SMTP Host not configured, email service disabled")
+	} else {
+		utils.Log("Routes").Warn("SMTP Host configured, but template only wires the no-op EmailService skeleton")
+	}
+	_ = services.NewNoopStorageService()
+
+	authService := services.NewAuthService(database.GetDB(), emailService)
+	userService := services.NewUserService(database.GetDB())
+	resourceService := services.NewResourceService(database.GetDB())
+
+	authHandler := handlers.NewAuth(authService)
+	userHandler := handlers.NewUser(userService)
+	resourceHandler := handlers.NewResource(resourceService)
+
 	app.Get("/health", handlers.HealthCheck)
-	app.Get("/ready", handlers.ReadinessCheck)
 
-	// Swagger documentation (public)
-	app.Get("/swagger/*", fiberSwagger.HandlerDefault)
+	if !config.AppConfig.IsProduction() {
+		app.Static("/swagger.json", "./docs/swagger.json")
+		app.Get("/docs", func(c *fiber.Ctx) error {
+			scheme := "http"
+			if c.Protocol() == "https" {
+				scheme = "https"
+			}
+			specURL := scheme + "://" + c.Hostname() + "/swagger.json"
+			html, err := scalar.ApiReferenceHTML(&scalar.Options{
+				SpecURL:     specURL,
+				Theme:       scalar.ThemeDefault,
+				Layout:      scalar.LayoutModern,
+				DarkMode:    true,
+				ShowSidebar: true,
+			})
+			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+			}
+			c.Set(fiber.HeaderContentType, fiber.MIMETextHTML)
+			return c.SendString(html)
+		})
+	}
 
-	// Auth routes (public)
-	authGroup := app.Group("/auth")
-	authGroup.Post("/register", handlers.Register)
-	authGroup.Post("/login", handlers.Login)
-	authGroup.Post("/refresh", handlers.RefreshToken)
+	api := app.Group("/api")
 
-	// Protected routes (require authentication)
-	// User routes
-	userGroup := app.Group("/user")
+	authGroup := api.Group("/auth")
+	authGroup.Use(middleware.NewAuthLimiter())
+	{
+		authGroup.Post("/register", authHandler.Register)
+		authGroup.Post("/login", authHandler.Login)
+		authGroup.Post("/refresh", authHandler.RefreshToken)
+		authGroup.Post("/forgot-password", authHandler.ForgotPassword)
+		authGroup.Post("/reset-password", authHandler.ResetPassword)
+	}
+
+	userGroup := api.Group("/user")
 	userGroup.Use(middleware.AuthMiddleware())
 	{
-		userGroup.Get("/profile", handlers.GetProfile)
-		userGroup.Put("/profile", handlers.UpdateProfile)
-		userGroup.Post("/change-password", handlers.ChangePassword)
+		userGroup.Get("/profile", userHandler.GetProfile)
+		userGroup.Put("/profile", userHandler.UpdateProfile)
+		userGroup.Post("/change-password", userHandler.ChangePassword)
 	}
 
-	// API routes
-	apiGroup := app.Group("/api")
-	apiGroup.Use(middleware.AuthMiddleware())
+	resourcesGroup := api.Group("/resources")
+	resourcesGroup.Use(middleware.AuthMiddleware())
 	{
-		// Books routes
-		booksGroup := apiGroup.Group("/books")
-		{
-			booksGroup.Get("/", handlers.GetBooks)
-			booksGroup.Get("/search", handlers.SearchBooks)
-			booksGroup.Get("/:id", handlers.GetBook)
-			booksGroup.Post("/", handlers.CreateBook)
-			booksGroup.Put("/:id", handlers.UpdateBook)
-			booksGroup.Delete("/:id", handlers.DeleteBook)
-		}
-
-		// Concurrent examples routes (educational/demo endpoints)
-		// TODO: These will be moved to documentation (docs/concurrent-patterns.md)
-		// concurrentGroup := apiGroup.Group("/concurrent")
-		// {
-		// 	// Overview of all patterns
-		// 	concurrentGroup.Get("/", handlers.GetConcurrentPatterns)
-
-		// 	// Pattern demonstrations
-		// 	concurrentGroup.Get("/parallel", handlers.ProcessBooksParallel)
-		// 	concurrentGroup.Get("/worker-pool", handlers.ProcessBooksWorkerPool)
-		// 	concurrentGroup.Get("/fan-out-fan-in", handlers.SearchBooksMultipleSources)
-		// 	concurrentGroup.Get("/pipeline", handlers.ProcessBooksPipeline)
-		// 	concurrentGroup.Post("/bulk-create", handlers.BulkCreateBooksWithRateLimit)
-		// 	concurrentGroup.Get("/timeout/:id", handlers.FetchBookWithTimeout)
-		// 	concurrentGroup.Get("/monitor/:id", handlers.MonitorBookUpdates)
-		// }
+		resourcesGroup.Get("/", resourceHandler.ListResources)
+		resourcesGroup.Post("/", resourceHandler.CreateResource)
+		resourcesGroup.Get("/:id", resourceHandler.GetResource)
+		resourcesGroup.Put("/:id", resourceHandler.UpdateResource)
+		resourcesGroup.Delete("/:id", resourceHandler.DeleteResource)
 	}
 
-	// 404 handler
 	app.Use(func(c *fiber.Ctx) error {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"status":  fiber.StatusNotFound,
-			"message": "endpoint not found",
-		})
+		return utils.NotFoundResponse(c, "endpoint not found")
 	})
 }

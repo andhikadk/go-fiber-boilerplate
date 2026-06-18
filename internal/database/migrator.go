@@ -3,11 +3,11 @@ package database
 import (
 	"embed"
 	"fmt"
-	"log"
 	"path"
 	"sort"
 	"strings"
 
+	"go-fiber-boilerplate/pkg/utils"
 	"gorm.io/gorm"
 )
 
@@ -37,7 +37,7 @@ func (m *Migrator) RunMigrationsFromFS(files embed.FS) error {
 	m.files = files
 
 	// Ensure migration_versions table exists
-	if err := m.ensureMigrationTable(); err != nil {
+	if err := m.EnsureMigrationTable(); err != nil {
 		return err
 	}
 
@@ -56,7 +56,6 @@ func (m *Migrator) RunMigrationsFromFS(files embed.FS) error {
 
 		// Check if migration is already applied
 		if m.isMigrationApplied(entry.Name()) {
-			log.Printf("Migration %s already applied, skipping", entry.Name())
 			continue
 		}
 
@@ -84,13 +83,13 @@ func (m *Migrator) RunMigrationsFromFS(files embed.FS) error {
 		}
 	}
 
-	log.Println("All migrations completed successfully")
+	utils.Log("Migrator").Info("All migrations completed successfully")
 	return nil
 }
 
 // executeMigration executes a single migration
 func (m *Migrator) executeMigration(migration *MigrationFile) error {
-	log.Printf("Running migration: %s", migration.Version)
+	utils.Log("Migrator").Info("Running migration", "version", migration.Version)
 
 	// Execute SQL
 	if err := m.db.Exec(migration.SQL).Error; err != nil {
@@ -102,12 +101,12 @@ func (m *Migrator) executeMigration(migration *MigrationFile) error {
 		return fmt.Errorf("failed to record migration %s: %w", migration.Version, err)
 	}
 
-	log.Printf("Migration %s completed successfully", migration.Version)
+	utils.Log("Migrator").Info("Migration completed successfully", "version", migration.Version)
 	return nil
 }
 
-// ensureMigrationTable ensures the migration versions table exists
-func (m *Migrator) ensureMigrationTable() error {
+// EnsureMigrationTable ensures the migration versions table exists
+func (m *Migrator) EnsureMigrationTable() error {
 	return m.db.Exec(`
 		CREATE TABLE IF NOT EXISTS migration_versions (
 			id SERIAL PRIMARY KEY,
@@ -115,6 +114,10 @@ func (m *Migrator) ensureMigrationTable() error {
 			applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)
 	`).Error
+}
+
+func (m *Migrator) ensureMigrationTable() error {
+	return m.EnsureMigrationTable()
 }
 
 // recordMigration records a migration as applied
@@ -147,6 +150,17 @@ func (m *Migrator) GetAppliedMigrations() ([]string, error) {
 func (m *Migrator) RollbackLastMigration() error {
 	// Note: This is a simplified implementation
 	// For proper rollback, you would need down migrations
-	log.Println("Rollback functionality requires down migrations to be implemented")
+	utils.Log("Migrator").Info("Rollback functionality requires down migrations to be implemented")
 	return fmt.Errorf("rollback not fully implemented")
+}
+
+func (m *Migrator) FreshMigrate() error {
+	utils.Log("Migrator").Warn("Dropping public schema for fresh migration")
+	if err := m.db.Exec("DROP SCHEMA public CASCADE").Error; err != nil {
+		return fmt.Errorf("failed to drop schema: %w", err)
+	}
+	if err := m.db.Exec("CREATE SCHEMA public").Error; err != nil {
+		return fmt.Errorf("failed to create schema: %w", err)
+	}
+	return nil
 }

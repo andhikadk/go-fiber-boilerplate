@@ -26,15 +26,30 @@ func ErrorResponse(c *fiber.Ctx, statusCode int, message string) error {
 	return c.Status(statusCode).JSON(response)
 }
 
+func ErrorResponseWithCode(c *fiber.Ctx, statusCode int, code, message string) error {
+	response := models.APIResponse{
+		Status:  statusCode,
+		Code:    code,
+		Message: message,
+		Error:   message,
+	}
+	return c.Status(statusCode).JSON(response)
+}
+
 // PaginatedResponse sends a paginated response
 func PaginatedResponse(c *fiber.Ctx, message string, data interface{}, page, limit int, total int64) error {
+	totalPages := 0
+	if limit > 0 {
+		totalPages = int((total + int64(limit) - 1) / int64(limit))
+	}
 	response := models.PaginatedResponse{
-		Status:  fiber.StatusOK,
-		Message: message,
-		Data:    data,
-		Page:    page,
-		Limit:   limit,
-		Total:   total,
+		Status:     fiber.StatusOK,
+		Message:    message,
+		Data:       data,
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
 	}
 	return c.Status(fiber.StatusOK).JSON(response)
 }
@@ -47,6 +62,10 @@ func CreatedResponse(c *fiber.Ctx, message string, data interface{}) error {
 // BadRequestResponse sends a 400 bad request response
 func BadRequestResponse(c *fiber.Ctx, message string) error {
 	return ErrorResponse(c, fiber.StatusBadRequest, message)
+}
+
+func BadRequestWithCodeResponse(c *fiber.Ctx, code, message string) error {
+	return ErrorResponseWithCode(c, fiber.StatusBadRequest, code, message)
 }
 
 // UnauthorizedResponse sends a 401 unauthorized response
@@ -72,4 +91,8 @@ func ConflictResponse(c *fiber.Ctx, message string) error {
 // InternalErrorResponse sends a 500 internal server error response
 func InternalErrorResponse(c *fiber.Ctx, message string) error {
 	return ErrorResponse(c, fiber.StatusInternalServerError, message)
+}
+
+func TooManyRequestsResponse(c *fiber.Ctx, message string) error {
+	return ErrorResponse(c, fiber.StatusTooManyRequests, message)
 }

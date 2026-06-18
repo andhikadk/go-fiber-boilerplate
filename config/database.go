@@ -2,36 +2,38 @@ package config
 
 import (
 	"fmt"
-	"log"
+	"net/url"
+	"os"
 
+	"go-fiber-boilerplate/pkg/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
-// GetDatabaseURL returns the database connection string
 func (c *Config) GetDatabaseURL() string {
 	switch c.DBDriver {
 	case "postgres":
-		return fmt.Sprintf(
-			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-			c.DBHost,
-			c.DBPort,
-			c.DBUser,
-			c.DBPassword,
-			c.DBName,
-			c.DBSSLMode,
-		)
+		u := &url.URL{
+			Scheme: "postgres",
+			User:   url.UserPassword(c.DBUser, c.DBPassword),
+			Host:   fmt.Sprintf("%s:%s", c.DBHost, c.DBPort),
+			Path:   c.DBName,
+		}
+		q := u.Query()
+		q.Set("sslmode", c.DBSSLMode)
+		u.RawQuery = q.Encode()
+		return u.String()
 	case "sqlite":
-		return c.DBName + ".db"
+		return c.DBName
 	default:
-		log.Fatalf("Unsupported database driver: %s", c.DBDriver)
+		utils.Log("Config").Error("Unsupported database driver", "driver", c.DBDriver)
+		os.Exit(1)
 		return ""
 	}
 }
 
-// GetDialector returns the appropriate GORM dialector
 func (c *Config) GetDialector() gorm.Dialector {
 	switch c.DBDriver {
 	case "postgres":
@@ -39,12 +41,12 @@ func (c *Config) GetDialector() gorm.Dialector {
 	case "sqlite":
 		return sqlite.Open(c.GetDatabaseURL())
 	default:
-		log.Fatalf("Unsupported database driver: %s", c.DBDriver)
+		utils.Log("Config").Error("Unsupported database driver", "driver", c.DBDriver)
+		os.Exit(1)
 		return nil
 	}
 }
 
-// GetGormLogLevel returns the appropriate GORM log level
 func (c *Config) GetGormLogLevel() logger.LogLevel {
 	switch c.LogLevel {
 	case "debug":

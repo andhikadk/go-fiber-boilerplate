@@ -3,37 +3,36 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"os"
+	"os/signal"
+	"runtime/debug"
+	"strings"
+	"syscall"
 
 	"go-fiber-boilerplate/assets"
 	"go-fiber-boilerplate/config"
+	"go-fiber-boilerplate/internal/cache"
 	"go-fiber-boilerplate/internal/database"
 	"go-fiber-boilerplate/internal/middleware"
 	"go-fiber-boilerplate/internal/routes"
-	"go-fiber-boilerplate/internal/utils"
+	"go-fiber-boilerplate/pkg/utils"
 
-	_ "go-fiber-boilerplate/docs" // Import generated docs
+	_ "go-fiber-boilerplate/docs"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
-	fiberLogger "github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
+	fiberRecover "github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"gorm.io/gorm"
 )
 
-//	@title						Go Fiber REST API Boilerplate
-//	@version					1.0
-//	@description				A production-ready REST API boilerplate built with Go Fiber, GORM, JWT authentication, and PostgreSQL/SQLite
-//	@termsOfService				http://swagger.io/terms/
-//	@contact.name				API Support
-//	@contact.url				https://github.com/yourusername/go-fiber-boilerplate
-//	@contact.email				support@example.com
-//	@license.name				MIT
-//	@license.url				https://opensource.org/licenses/MIT
+//	@title						Go Fiber Boilerplate API
+//	@version					2.0
+//	@description				A production-ready REST API template built with Fiber, GORM, PostgreSQL, JWT, SQL migrations, and Scalar docs.
 //	@host						localhost:4000
-//	@BasePath					/
+//	@BasePath					/api
 //	@schemes					http https
 //	@securityDefinitions.apikey	BearerAuth
 //	@in							header
@@ -41,158 +40,171 @@ import (
 //	@description				Type "Bearer" followed by a space and JWT token.
 
 func main() {
-	// Parse command line flags
-	migrateCmd := flag.String("migrate", "", "Run migrations (use: -migrate=auto or -migrate=sql)")
+	migrateCmd := flag.String("migrate", "", "Run SQL migrations (use: -migrate=run, -migrate=fresh, or -migrate=status)")
 	seedCmd := flag.Bool("seed", false, "Seed database with sample data")
-	statusCmd := flag.Bool("status", false, "Show migration status")
 	flag.Parse()
 
-	// Load configuration
+	utils.InitLogger()
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
+		utils.Log("App").Error("Failed to load configuration", "error", err)
+		os.Exit(1)
 	}
+	utils.SetLogLevel(cfg.LogLevel)
+	utils.SetQuiet(cfg.LogQuiet)
+	utils.CleanupOldLogs("logs/app", cfg.LogRetentionDays)
 
-	// Initialize logger
-	if err := utils.InitLogger(); err != nil {
-		log.Fatalf("Failed to initialize logger: %v", err)
-	}
-
-	// Initialize database
 	db, err := database.Initialize(cfg)
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		utils.Log("App").Error("Failed to initialize database", "error", err)
+		os.Exit(1)
 	}
 	defer database.Close()
 
-	// Handle migration commands
 	if *migrateCmd != "" {
-		if *migrateCmd == "sql" {
-			log.Println("Running SQL migrations from embedded files...")
-			if err := database.MigrateFromFS(db, assets.MigrationsFS); err != nil {
-				log.Fatalf("Migration failed: %v", err)
-			}
-		} else {
-			// Default to AutoMigrate for development
-			if err := database.Migrate(db, cfg); err != nil {
-				log.Fatalf("Migration failed: %v", err)
-			}
-		}
-		log.Println("Migrations completed successfully")
+		handleMigrationCommand(db, cfg, *migrateCmd)
 		return
 	}
 
-	// Handle seed command
 	if *seedCmd {
-		log.Println("Seeding database...")
-		if err := database.SeedFromFS(db, assets.MigrationsFS); err != nil {
-			log.Fatalf("Seeding failed: %v", err)
+		utils.Log("App").Info("Seeding database")
+		if err := database.SeedFromFS(db, assets.SeedsFS); err != nil {
+			utils.Log("App").Error("Seeding failed", "error", err)
+			os.Exit(1)
 		}
-		log.Println("Seeding completed successfully")
+		utils.Log("App").Info("Seeding completed successfully")
 		return
 	}
 
-	// Handle status command
-	if *statusCmd {
-		showMigrationStatus(db)
-		return
+	utils.Log("App").Info("Checking and running pending migrations")
+	if err := database.MigrateFromFS(db, assets.MigrationsFS); err != nil {
+		utils.Log("App").Error("Failed to run migrations", "error", err)
+		os.Exit(1)
 	}
 
-	// Run normal migrations (AutoMigrate for dev, SQL for production)
-	if err := database.Migrate(db, cfg); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
-
-	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName:           cfg.AppName,
+		BodyLimit:         10 * 1024 * 1024,
 		ReadTimeout:       cfg.ReadTimeout,
 		WriteTimeout:      cfg.WriteTimeout,
 		IdleTimeout:       cfg.IdleTimeout,
 		EnablePrintRoutes: cfg.IsDevelopment(),
 	})
 
-	// Setup global middleware
+	cacheClient := cache.New(cfg)
+	defer cacheClient.Close()
+	middleware.InitLimiterStorage(cache.NewLimiterStorage(cfg))
+
 	setupMiddleware(app, cfg)
-
-	// Setup routes
-	routes.SetupRoutes(app)
-
-	// Start server
+	routes.SetupRoutes(app, cacheClient)
 	startServer(app, cfg)
 }
 
-// showMigrationStatus displays migration status
+func handleMigrationCommand(db *gorm.DB, cfg *config.Config, cmd string) {
+	switch cmd {
+	case "fresh":
+		if !cfg.IsDevelopment() {
+			utils.Log("App").Error("migrate=fresh is only allowed in development mode", "env", cfg.Env)
+			os.Exit(1)
+		}
+		migrator := database.NewMigrator(db)
+		if err := migrator.FreshMigrate(); err != nil {
+			utils.Log("App").Error("Fresh migration failed", "error", err)
+			os.Exit(1)
+		}
+		if err := database.MigrateFromFS(db, assets.MigrationsFS); err != nil {
+			utils.Log("App").Error("Migration failed", "error", err)
+			os.Exit(1)
+		}
+	case "status":
+		showMigrationStatus(db)
+	default:
+		if err := database.MigrateFromFS(db, assets.MigrationsFS); err != nil {
+			utils.Log("App").Error("Migration failed", "error", err)
+			os.Exit(1)
+		}
+	}
+}
+
 func showMigrationStatus(db *gorm.DB) {
 	fmt.Println("\n=== Migration Status ===")
-
 	migrator := database.NewMigrator(db)
 	migrations, err := migrator.GetAppliedMigrations()
 	if err != nil {
-		log.Fatalf("Failed to get migration status: %v", err)
+		utils.Log("App").Error("Failed to get migration status", "error", err)
+		os.Exit(1)
 	}
 
 	if len(migrations) == 0 {
 		fmt.Println("No migrations applied yet")
 	} else {
 		fmt.Println("Applied migrations:")
-		for _, m := range migrations {
-			fmt.Printf("  ✓ %s\n", m)
+		for _, migration := range migrations {
+			fmt.Printf("  %s\n", migration)
 		}
 	}
 
-	seeder := database.NewSeeder(db)
-	seeds, err := seeder.GetAppliedSeeds()
-
-	fmt.Println("\nApplied seeds:")
-	if err != nil {
-		// Table doesn't exist yet, no seeds applied
-		fmt.Println("  No seeds applied yet")
-	} else if len(seeds) == 0 {
-		fmt.Println("  No seeds applied yet")
+	fmt.Println("\nAvailable seeds:")
+	entries, err := assets.SeedsFS.ReadDir("migrations/seeds")
+	if err != nil || len(entries) == 0 {
+		fmt.Println("  No seed files found")
 	} else {
-		for _, s := range seeds {
-			fmt.Printf("  ✓ %s\n", s)
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".sql") {
+				fmt.Printf("  %s\n", entry.Name())
+			}
 		}
 	}
 	fmt.Println()
 }
 
-// setupMiddleware configures global middleware
 func setupMiddleware(app *fiber.App, cfg *config.Config) {
-	// Logger middleware
-	app.Use(fiberLogger.New(fiberLogger.Config{
-		Format: "[${time}] ${status} - ${method} ${path} (${latency})\n",
+	app.Use(requestid.New())
+	app.Use(middleware.RequestContext())
+	app.Use(fiberRecover.New(fiberRecover.Config{
+		EnableStackTrace: true,
+		StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
+			utils.Log("Recover").Error("panic recovered",
+				"request_id", c.Locals("requestid"),
+				"method", c.Method(),
+				"path", c.Path(),
+				"panic", fmt.Sprintf("%v", e),
+				"stack", string(debug.Stack()),
+			)
+		},
 	}))
-
-	// Recovery middleware (panic recovery)
-	app.Use(recover.New())
-
-	// CORS middleware
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: cfg.CORSAllowedOrigins,
-		AllowMethods: cfg.CORSAllowedMethods,
-		AllowHeaders: cfg.CORSAllowedHeaders,
+		AllowOrigins:     cfg.CORSAllowedOrigins,
+		AllowMethods:     cfg.CORSAllowedMethods,
+		AllowHeaders:     cfg.CORSAllowedHeaders,
+		AllowCredentials: true,
 	}))
-
-	// Security middleware (Helmet)
 	app.Use(helmet.New())
-
-	// Compression middleware
-	app.Use(compress.New(compress.Config{
-		Level: compress.LevelDefault,
-	}))
-
-	// Error handling middleware
+	app.Use(middleware.NewGlobalLimiter())
+	app.Use(compress.New(compress.Config{Level: compress.LevelDefault}))
+	app.Use(middleware.AccessLog(cfg.LogHTTPBody, cfg.LogBodyMaxBytes, cfg.LogHealthSampleN))
 	app.Use(middleware.ErrorHandlingMiddleware())
 }
 
-// startServer starts the Fiber server
 func startServer(app *fiber.App, cfg *config.Config) {
 	address := fmt.Sprintf(":%s", cfg.Port)
-	log.Printf("Starting %s on %s [%s mode]", cfg.AppName, address, cfg.Env)
+	utils.Log("App").Info("Starting server", "app_name", cfg.AppName, "address", address, "mode", cfg.Env)
 
-	if err := app.Listen(address); err != nil {
-		log.Fatalf("Server error: %v", err)
+	go func() {
+		if err := app.Listen(address); err != nil {
+			utils.Log("App").Error("Server error", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	utils.Log("App").Info("Shutting down server gracefully")
+	if err := app.Shutdown(); err != nil {
+		utils.Log("App").Error("Server shutdown error", "error", err)
 	}
+	utils.Log("App").Info("Server stopped")
 }

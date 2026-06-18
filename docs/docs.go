@@ -9,96 +9,14 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "termsOfService": "http://swagger.io/terms/",
-        "contact": {
-            "name": "API Support",
-            "url": "https://github.com/yourusername/go-fiber-boilerplate",
-            "email": "support@example.com"
-        },
-        "license": {
-            "name": "MIT",
-            "url": "https://opensource.org/licenses/MIT"
-        },
+        "contact": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/books": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieve all books with pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Books"
-                ],
-                "summary": "Get all books",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Page number (default: 1)",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Items per page (default: 10, max: 100)",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Books retrieved successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.PaginatedResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.Book"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to fetch books",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    }
-                }
-            },
+        "/auth/forgot-password": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Create a new book with title, author, year, and ISBN",
                 "consumes": [
                     "application/json"
                 ],
@@ -106,317 +24,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Books"
+                    "Authentication"
                 ],
-                "summary": "Create a new book",
+                "summary": "Request password reset",
                 "parameters": [
                     {
-                        "description": "Book creation data",
+                        "description": "Email address",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateBookRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Book created successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.Book"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request or validation error",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to create book",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/books/search": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Search for books by title or author",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Books"
-                ],
-                "summary": "Search books",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search query",
-                        "name": "q",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Search results",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.Book"
-                                            }
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Search query is required",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Search failed",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/books/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retrieve a specific book by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Books"
-                ],
-                "summary": "Get a book by ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Book ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Book retrieved successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.Book"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid book ID",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Book not found",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Update an existing book's information",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Books"
-                ],
-                "summary": "Update a book",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Book ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Book update data",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/dto.UpdateBookRequest"
+                            "$ref": "#/definitions/dto.ForgotPasswordRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Book updated successfully",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/models.Book"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request or validation error",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Book not found",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Delete a book by its ID (soft delete)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Books"
-                ],
-                "summary": "Delete a book",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Book ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Book deleted successfully",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid book ID",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Book not found",
+                        "description": "Reset email sent if email exists",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -452,29 +76,17 @@ const docTemplate = `{
                     "200": {
                         "description": "Login successful",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.LoginResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/models.APIResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid request or validation error",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
                     "401": {
-                        "description": "Invalid credentials or inactive account",
+                        "description": "Invalid credentials",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -484,7 +96,6 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Generate a new access token using a valid refresh token",
                 "consumes": [
                     "application/json"
                 ],
@@ -510,29 +121,11 @@ const docTemplate = `{
                     "200": {
                         "description": "Token refreshed successfully",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.RefreshTokenResponse"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request body",
-                        "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
                     "401": {
-                        "description": "Invalid or expired refresh token",
+                        "description": "Invalid refresh token",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -542,7 +135,7 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "Register a new user with name, email, and password",
+                "description": "Register a new user with email, password, and profile name",
                 "consumes": [
                     "application/json"
                 ],
@@ -572,13 +165,265 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request or validation error",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
                     "409": {
                         "description": "Email already registered",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset-password": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "Reset token and new password",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password reset successful",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid token or request",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Check API and database health",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "List resources",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.PaginatedResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Create resource",
+                "parameters": [
+                    {
+                        "description": "Resource creation data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateResourceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/resources/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Get resource",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Resource ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Update resource",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Resource ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Resource update data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateResourceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Delete resource",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Resource ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -593,7 +438,6 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Change the authenticated user's password",
                 "consumes": [
                     "application/json"
                 ],
@@ -623,13 +467,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request or validation error",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized or invalid old password",
+                        "description": "Invalid current password",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -644,10 +488,6 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieve the authenticated user's profile information",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -659,23 +499,11 @@ const docTemplate = `{
                     "200": {
                         "description": "Profile retrieved successfully",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.UserResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/models.APIResponse"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized or invalid token",
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -694,7 +522,6 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update the authenticated user's profile information",
                 "consumes": [
                     "application/json"
                 ],
@@ -720,35 +547,11 @@ const docTemplate = `{
                     "200": {
                         "description": "Profile updated successfully",
                         "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/models.APIResponse"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/dto.UserResponse"
-                                        }
-                                    }
-                                }
-                            ]
+                            "$ref": "#/definitions/models.APIResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid request or validation error",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized or invalid token",
-                        "schema": {
-                            "$ref": "#/definitions/models.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to update profile",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/models.APIResponse"
                         }
@@ -760,40 +563,70 @@ const docTemplate = `{
     "definitions": {
         "dto.ChangePasswordRequest": {
             "type": "object",
+            "required": [
+                "new_password",
+                "old_password"
+            ],
             "properties": {
                 "new_password": {
                     "type": "string",
+                    "maxLength": 255,
+                    "minLength": 8,
                     "example": "newpassword123"
                 },
                 "old_password": {
                     "type": "string",
+                    "minLength": 1,
                     "example": "oldpassword123"
                 }
             }
         },
-        "dto.CreateBookRequest": {
+        "dto.CreateResourceRequest": {
             "type": "object",
+            "required": [
+                "name"
+            ],
             "properties": {
-                "author": {
+                "description": {
                     "type": "string",
-                    "example": "Alan A. A. Donovan"
+                    "maxLength": 2000,
+                    "example": "A reusable sample resource"
                 },
-                "isbn": {
+                "name": {
                     "type": "string",
-                    "example": "978-0134190440"
+                    "maxLength": 120,
+                    "minLength": 2,
+                    "example": "Example Resource"
                 },
-                "title": {
+                "status": {
                     "type": "string",
-                    "example": "The Go Programming Language"
-                },
-                "year": {
-                    "type": "integer",
-                    "example": 2015
+                    "enum": [
+                        "active",
+                        "inactive",
+                        "archived"
+                    ],
+                    "example": "active"
+                }
+            }
+        },
+        "dto.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "john@example.com"
                 }
             }
         },
         "dto.LoginRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
             "properties": {
                 "email": {
                     "type": "string",
@@ -801,128 +634,124 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string",
+                    "minLength": 1,
                     "example": "password123"
-                }
-            }
-        },
-        "dto.LoginResponse": {
-            "type": "object",
-            "properties": {
-                "expires_in": {
-                    "type": "integer",
-                    "example": 900
-                },
-                "refresh_token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                },
-                "token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 }
             }
         },
         "dto.RefreshTokenRequest": {
             "type": "object",
+            "required": [
+                "refresh_token"
+            ],
             "properties": {
                 "refresh_token": {
                     "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                }
-            }
-        },
-        "dto.RefreshTokenResponse": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string",
-                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    "example": "eyJhbGciOi..."
                 }
             }
         },
         "dto.RegisterRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "first_name",
+                "password"
+            ],
             "properties": {
                 "email": {
                     "type": "string",
                     "example": "john@example.com"
                 },
-                "name": {
+                "first_name": {
                     "type": "string",
-                    "example": "John Doe"
+                    "maxLength": 120,
+                    "minLength": 2,
+                    "example": "John"
+                },
+                "last_name": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "example": "Doe"
                 },
                 "password": {
                     "type": "string",
+                    "maxLength": 255,
+                    "minLength": 8,
                     "example": "password123"
                 }
             }
         },
-        "dto.UpdateBookRequest": {
+        "dto.ResetPasswordRequest": {
             "type": "object",
+            "required": [
+                "new_password",
+                "token"
+            ],
             "properties": {
-                "author": {
+                "new_password": {
                     "type": "string",
-                    "example": "Alan A. A. Donovan \u0026 Brian W. Kernighan"
+                    "maxLength": 255,
+                    "minLength": 8,
+                    "example": "newpassword123"
                 },
-                "isbn": {
+                "token": {
                     "type": "string",
-                    "example": "978-0134190440"
-                },
-                "title": {
-                    "type": "string",
-                    "example": "The Go Programming Language (Updated)"
-                },
-                "year": {
-                    "type": "integer",
-                    "example": 2016
+                    "example": "abc123"
                 }
             }
         },
         "dto.UpdateProfileRequest": {
             "type": "object",
+            "required": [
+                "first_name"
+            ],
             "properties": {
-                "name": {
+                "first_name": {
                     "type": "string",
-                    "example": "John Doe Updated"
+                    "maxLength": 120,
+                    "minLength": 2,
+                    "example": "John"
+                },
+                "last_name": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "example": "Doe"
                 }
             }
         },
-        "dto.UserResponse": {
+        "dto.UpdateResourceRequest": {
             "type": "object",
             "properties": {
-                "created_at": {
+                "description": {
                     "type": "string",
-                    "example": "2024-01-01T00:00:00Z"
-                },
-                "email": {
-                    "type": "string",
-                    "example": "john@example.com"
-                },
-                "id": {
-                    "type": "integer",
-                    "example": 1
-                },
-                "is_active": {
-                    "type": "boolean",
-                    "example": true
+                    "maxLength": 2000,
+                    "example": "Updated description"
                 },
                 "name": {
                     "type": "string",
-                    "example": "John Doe"
+                    "maxLength": 120,
+                    "minLength": 2,
+                    "example": "Updated Resource"
                 },
-                "role": {
+                "status": {
                     "type": "string",
-                    "example": "user"
-                },
-                "updated_at": {
-                    "type": "string",
-                    "example": "2024-01-01T00:00:00Z"
+                    "enum": [
+                        "active",
+                        "inactive",
+                        "archived"
+                    ],
+                    "example": "inactive"
                 }
             }
         },
         "models.APIResponse": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "string",
+                    "example": ""
+                },
                 "data": {},
                 "error": {
                     "type": "string",
@@ -935,41 +764,6 @@ const docTemplate = `{
                 "status": {
                     "type": "integer",
                     "example": 200
-                }
-            }
-        },
-        "models.Book": {
-            "type": "object",
-            "properties": {
-                "author": {
-                    "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "isbn": {
-                    "type": "string"
-                },
-                "pages": {
-                    "type": "integer"
-                },
-                "publisher": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "year": {
-                    "type": "integer"
                 }
             }
         },
@@ -996,6 +790,10 @@ const docTemplate = `{
                 "total": {
                     "type": "integer",
                     "example": 100
+                },
+                "total_pages": {
+                    "type": "integer",
+                    "example": 10
                 }
             }
         }
@@ -1012,12 +810,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "2.0",
 	Host:             "localhost:4000",
-	BasePath:         "/",
+	BasePath:         "/api",
 	Schemes:          []string{"http", "https"},
-	Title:            "Go Fiber REST API Boilerplate",
-	Description:      "A production-ready REST API boilerplate built with Go Fiber, GORM, JWT authentication, and PostgreSQL/SQLite",
+	Title:            "Go Fiber Boilerplate API",
+	Description:      "A production-ready REST API template built with Fiber, GORM, PostgreSQL, JWT, SQL migrations, and Scalar docs.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",
