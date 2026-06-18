@@ -56,6 +56,9 @@ type Config struct {
 	SentryLogLevel         string
 	SentryTracesSampleRate float64
 
+	FrontendURL      string
+	PasswordResetURL string
+
 	SMTPHost      string
 	SMTPPort      int
 	SMTPUser      string
@@ -116,6 +119,9 @@ func LoadConfig() (*Config, error) {
 		SentryLogLevel:         getEnv("SENTRY_LOG_LEVEL", "info"),
 		SentryTracesSampleRate: parseFloat(getEnv("SENTRY_TRACES_SAMPLE_RATE", "0")),
 
+		FrontendURL:      getEnv("FRONTEND_URL", "http://localhost:3000"),
+		PasswordResetURL: getEnv("PASSWORD_RESET_URL", "http://localhost:3000/reset-password?token={token}"),
+
 		SMTPHost:      getEnv("SMTP_HOST", ""),
 		SMTPPort:      parseInt(getEnv("SMTP_PORT", "587")),
 		SMTPUser:      getEnv("SMTP_USER", ""),
@@ -146,6 +152,9 @@ func (c *Config) Validate() error {
 	}
 	if c.IsProduction() && c.DBSSLMode == "disable" {
 		utils.Log("Config").Warn("DB_SSL_MODE is disabled in production")
+	}
+	if c.SMTPHost != "" && c.SMTPFromEmail == "" {
+		return fmt.Errorf("SMTP_FROM_EMAIL is required when SMTP_HOST is configured")
 	}
 	return nil
 }

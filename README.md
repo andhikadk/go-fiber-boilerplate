@@ -2,7 +2,7 @@
 
 A production-ready boilerplate for building REST APIs with **Fiber**, **GORM**, **PostgreSQL**, **JWT authentication**, SQL migrations, structured logging, and Scalar API documentation.
 
-This template is intentionally generic. It includes authentication, user profile endpoints, a neutral `Resource` CRUD example, optional integration skeletons, Docker support, and a clear layered architecture that can be reused for future API projects.
+This template is intentionally generic. It includes authentication, user profile endpoints, a neutral `Resource` CRUD example, ready-to-use SMTP password reset email, optional integration skeletons, Docker support, and a clear layered architecture that can be reused for future API projects.
 
 ## Features
 
@@ -18,7 +18,8 @@ This template is intentionally generic. It includes authentication, user profile
 - **Structured JSON Logging** - Request IDs, module names, daily log rotation, and redacted request/response bodies.
 - **Middleware Stack** - Request ID, request context, panic recovery, CORS, Helmet, rate limiting, compression, access logs, and centralized error handling.
 - **Optional Redis Cache** - Redis-backed cache and rate-limit storage with no-op fallback when Redis is not configured.
-- **Optional Integration Skeletons** - Email and storage interfaces with no-op implementations.
+- **SMTP Email** - Ready-to-use password reset email with no-op fallback when SMTP is not configured.
+- **Optional Integration Skeletons** - Storage interface with a no-op implementation.
 - **Docker Support** - Production and development Dockerfiles, plus Docker Compose with Air hot reload.
 - **Testing Infrastructure** - Test database setup, fixtures, and assertion helpers.
 
@@ -53,6 +54,7 @@ go-fiber-boilerplate/
 │   └── testutil/                      # Test DB, fixtures, assertions
 ├── pkg/
 │   ├── jwt/                           # JWT token manager
+│   ├── mailer/                        # SMTP mailer abstraction
 │   └── utils/                         # Responses, logger, password, redaction helpers
 ├── .air.toml                          # Air hot reload configuration
 ├── .env.example                       # Environment template
@@ -579,6 +581,9 @@ LOG_RETENTION_DAYS=14
 LOG_HEALTH_SAMPLE_N=20
 LOG_QUIET=true
 
+FRONTEND_URL=http://localhost:3000
+PASSWORD_RESET_URL=http://localhost:3000/reset-password?token={token}
+
 REDIS_HOST=
 REDIS_PORT=6379
 CACHE_ENABLED=true
@@ -588,7 +593,7 @@ SMTP_HOST=
 SMTP_PORT=587
 ```
 
-Redis is disabled when `REDIS_HOST` is empty. Email-backed flows use the no-op email service until a real implementation is wired.
+Redis is disabled when `REDIS_HOST` is empty. SMTP email is disabled when `SMTP_HOST` is empty. When SMTP is configured, `POST /api/auth/forgot-password` sends a password reset link using `PASSWORD_RESET_URL`; include `{token}` where the reset token should be inserted.
 
 ## Database Migrations
 
@@ -721,6 +726,10 @@ Auth, optional auth, role checks, rate limiting, request context, access logging
 ### `internal/cache`
 
 Optional Redis cache wrapper. Disabled safely when Redis is not configured or unreachable.
+
+### `pkg/mailer`
+
+Generic mailer interface and SMTP client used by the password reset email flow.
 
 ### `pkg/utils`
 

@@ -98,7 +98,7 @@ func NewResourceService(db *gorm.DB) ResourceService {
 - `AuthService`: register, login, refresh, forgot password, reset password.
 - `UserService`: get profile, update profile, change password.
 - `ResourceService`: generic CRUD sample for future feature reference.
-- `EmailService`: interface + no-op implementation.
+- `EmailService`: SMTP-backed password reset email with no-op fallback.
 - `StorageService`: interface + no-op placeholder.
 - `cache.Client`: Redis-backed cache with no-op fallback.
 

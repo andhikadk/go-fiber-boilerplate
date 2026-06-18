@@ -7,6 +7,7 @@ import (
 	"go-fiber-boilerplate/internal/handlers"
 	"go-fiber-boilerplate/internal/middleware"
 	"go-fiber-boilerplate/internal/services"
+	"go-fiber-boilerplate/pkg/mailer"
 	"go-fiber-boilerplate/pkg/utils"
 
 	scalar "github.com/MarceloPetrucio/go-scalar-api-reference"
@@ -18,7 +19,20 @@ func SetupRoutes(app *fiber.App, _ *cache.Client) {
 	if config.AppConfig.SMTPHost == "" {
 		utils.Log("Routes").Warn("SMTP Host not configured, email service disabled")
 	} else {
-		utils.Log("Routes").Warn("SMTP Host configured, but template only wires the no-op EmailService skeleton")
+		smtpMailer := mailer.NewSMTPClient(
+			config.AppConfig.SMTPHost,
+			config.AppConfig.SMTPPort,
+			config.AppConfig.SMTPUser,
+			config.AppConfig.SMTPPassword,
+			config.AppConfig.SMTPFromName,
+			config.AppConfig.SMTPFromEmail,
+		)
+		emailService = services.NewEmailService(
+			smtpMailer,
+			config.AppConfig.AppName,
+			config.AppConfig.PasswordResetURL,
+		)
+		utils.Log("Routes").Info("SMTP email service initialized", "host", config.AppConfig.SMTPHost, "port", config.AppConfig.SMTPPort)
 	}
 	_ = services.NewNoopStorageService()
 
